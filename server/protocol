@@ -1,0 +1,10 @@
+{
+  "srcAddress": "123",
+  "srcService": "temp1",
+  "command": "publishData",
+  "data": "12.6"
+}
+
+
+
+  

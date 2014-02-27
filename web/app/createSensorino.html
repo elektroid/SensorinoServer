@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" ng-app="phonecatApp">
+<head>
+  <meta charset="utf-8">
+  <title>Google Phone Gallery</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/bootstrap.css">
+  <script src="lib/angular/angular.js"></script>
+  <script src="js/controllers.js"></script>
+</head>
+<body ng-controller="PhoneListCtrl">
+
+  <div class="container-fluid">
+
+	
+
+    <div ng-controller="Controller">
+    <form novalidate class="simple-form">
+    Name: <input type="text" ng-model="sensorino.name" required minlength=3 maxlength=12 /><br />
+    Description: <input type="text" ng-model="sensorino.description" required /><br />
+    Location: <input type="text" ng-model="sensorino.location" required /><br />
+    <button ng-click="reset()">RESET</button>
+    <button ng-click="create(user)">CREATE</button>
+    </form>
+    <pre>form = {{sensorino | json}}</pre>
+    <pre>master = {{master | json}}</pre>
+    </div>
+     
+    <script>
+    function Controller($scope) {
+    $scope.master = {};
+     
+    $scope.update = function(sensorino) {
+    $scope.master = angular.copy(sensorino);
+    };
+     
+    $scope.reset = function() {
+    $scope.sensorino = angular.copy($scope.master);
+    };
+     
+    $scope.reset();
+    }
+    </script>
+
+
+
+  </div>
+
+</body>
+</html>
