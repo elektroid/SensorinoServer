@@ -1,2 +1,2 @@
-curl -X POST -H "application/json" -d '{"key":"val"}' http://127.0.0.1:5000/api/computer
+curl -X POST -H "Content-Type: application/json" -d '{"address":"1111", "name":"myFirstSensorino", "description":"a cool one"}' http://127.0.0.1:5000/sensorinos
 

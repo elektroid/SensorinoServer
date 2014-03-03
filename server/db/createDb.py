@@ -7,18 +7,18 @@ c = conn.cursor()
 c.execute('''DROP TABLE IF EXISTS services''')
 
 c.execute('''CREATE TABLE services
-             (serviceId text, name text, stype text, sid text)''')
+             (serviceId INTEGER PRIMARY KEY, name text, stype text, sid text)''')
 
 
 c.execute('''DROP TABLE IF EXISTS sensorinos''')
 
 c.execute('''CREATE TABLE sensorinos
-             (sid text, name text, address text, description text, owner text, location text)''')
+             (sid INTEGER PRIMARY KEY, name text, address text UNIQUE, description text, owner text, location text)''')
 
 c.execute('''DROP TABLE IF EXISTS dataServicesLog''')
 
 c.execute('''CREATE TABLE dataServicesLog
-             (sid text, serviceId text, value text, timestamp text)''')
+             (sid integer, serviceId integer, value text, timestamp text)''')
 
 
 
