@@ -13,6 +13,47 @@ Sensorino <b>{{sensorino.name}}</b>
     <h2>Services</h2>
     <table class="table">
         <tr><th>Service name</th><th>type</th></th>device</th></tr>
-        <tr ng-repeat="service in services"><td></td><td></td><td></td></tr>
+        <tr ng-repeat="service in services"><td>{{service.name}}</td><td>{{service.dataType}}</td><td>{{service.sid}}</td></tr>
     </table>
 </div>
+
+ <span class="glyphicon glyphicon-plus"  ng-click="activateForm()"></span>
+
+
+<div class="row" id="serviceForm" name="serviceForm" ng-show="showForm">
+    <form class="form-horizontal">
+        <fieldset>
+
+        <!-- Form Name -->
+        <legend>Create new Service</legend>
+
+        <!-- Text input-->
+        <div class="control-group">
+          <label class="control-label" for="sname">Name</label>
+          <div class="controls">
+            <input id="sname" name="sname" placeholder="only alphanum"
+                class="input-xlarge" required="" type="text" ng-model="newService.name">
+            <p class="help-block">What service is that ?</p>
+          </div>
+        </div>
+        <!-- Select Basic -->
+        <div class="control-group">
+          <label class="control-label" for="dataType">Choose data type</label>
+          <div class="controls">
+            <select id="dataType" name="dataType" class="input-xlarge">
+              <option>Temp</option>
+              <option>Humidity</option>
+              <option>Light</option>
+            </select>
+          </div>
+        </div>
+
+
+        </fieldset>
+
+        <button ng-click="createService(newService)">Create Service</button>
+    </form>
+
+
+</div>
+

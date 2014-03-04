@@ -49,9 +49,12 @@ class Core:
         rows = c.fetchall()
 
         for row in rows:
-            self.addSensorino(Sensorino( row["name"], row["address"], 
-                     row["description"], row["owner"], row["location"], row["sid"]))
+            sens=Sensorino( row["name"], row["address"], row["description"], row["owner"], row["location"], row["sid"])
                      #row["description"], row["owner"], Location(row["location"])))
+            self.addSensorino(sens)
+            servicesRows=self.getServicesBySensorino(sens.sid)
+            for srow in servicesRows:
+                sens.registerService(DataService(srow['name'], srow['dataType'], sens.sid, srow['serviceId']))
 
     def addSensorino(self, sensorino):
         if (sensorino in self.sensorinos):
@@ -72,7 +75,11 @@ class Core:
             self.sensorinos.remove(s) 
         
     def findSensorino(self, sid=None, address=None):
+        print("search sensorino with id:"+str(sid))
         for sens in self.sensorinos:
+            print("this one is :"+str(sens.sid))
+            if (sid==sens.sid):
+                print("got it")
             if ((sid!=None and sens.sid == sid) or(address!=None and sens.address==address)):
                 return sens
         return None
@@ -122,8 +129,6 @@ class SerialGenerator:
 
     def generatePublish():
         return '{ "srcAddress": "123", "srcService": "temp1", "command": "publishData", "data": "12.6"}'
-
-    
     
 
 
@@ -143,8 +148,15 @@ class Sensorino:
         if (self.getService(service.serviceId)==None):
             self.services.append(service)
 
+    def removeService(self, serviceId):
+        for service in self.services:
+            if (service.serviceId == serviceId):
+                self.remove(service)
+                break
+    
+
     def getService(self, serviceId):
-        for service in services:
+        for service in self.services:
             if service.serviceId==serviceId:
                 return service
         return None
@@ -187,7 +199,7 @@ class Sensorino:
         
 
 class Device:
-    def __init__(self, name, did, location):
+    def __init__(self, name, location, did):
         self.name=name
         self.did=did
         self.location=location
@@ -203,8 +215,8 @@ class Device:
 
 
 class DataDevice(Device):
-    def __init__(self, name, did, location, dataType):
-        Device.__init__( self, name, did, location)
+    def __init__(self, name, dataType, location=None, did=None):
+        Device.__init__( self, name, location, did)
         self.type="data"
         self.dataType=dataType
 
@@ -215,7 +227,7 @@ class DataDevice(Device):
 
 class ActuatorDevice(Device):
     def __init__(self, name, did, location, actuatorType):
-        Device.__init__(self, name, did, location)
+        Device.__init__(self, name, location, did)
         self.type="action"
         self.actuatorType=actuatorType
 
@@ -249,32 +261,43 @@ class Service():
         self.name=name
         self.serviceId=serviceId
         self.sid=None
-    def setSensorino(self, sid):
-        self.sid=sid
+    def setSensorino(self, s):
+        self.sid=s.sid
     def persist(self):
         if (self.sid==None):
             raise(Exception("Can't persist orphan service"))
     
 
 class DataService(Service):
-    def __init__(self, name, serviceId, device):
+    def __init__(self, name, dataType, sid, serviceId=None):
         Service.__init__( self, name, serviceId)
-        self.device=device
+        self.dataType=dataType
+        self.sid=sid
         self.stype="DATA"
 
     def saveToDb(self):
         if (self.sid==None):
             logger.critical("unable to save service without sensorino")
             return None
-        if (self.sid==None):
+
+        print("save to db")
+        
+        global dbPath
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        status=None
+        if (self.serviceId==None):
             logger.debug("INSERT service")
-            c.execute("INSERT INTO services ( name, stype, sid)  VALUES (?,?,?)", (self.serviceId, self.name, self.stype, self.sid))
+            status=c.execute("INSERT INTO services ( name, stype, dataType, sid)  VALUES (?,?,?,?)",
+                ( self.name, self.stype, self.dataType, self.sid))
+            self.serviceId=c.lastrowid
         else:
             logger.debug("UPDATE service")
-            c.execute("UPDATE services SET stype=:stype WHERE  sid=:sid AND serviceId=:serviceId LIMIT 1",
+            print(self.toData())
+            status=c.execute("UPDATE services SET stype=:stype WHERE sid=:sid AND serviceId=:serviceId LIMIT 1",
                  self.toData())
-
         conn.commit()
+        return status
         
     def deleteFromDb(self):
         conn = sqlite3.connect(dbPath)
@@ -282,6 +305,7 @@ class DataService(Service):
         logger.debug("DELETE service")
         status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1")
         conn.commit()
+        return status
 
     def logData(self, value):
         conn = sqlite3.connect(dbPath)
@@ -293,11 +317,14 @@ class DataService(Service):
         conn.commit()
         return status
 
+
     def toData(self):
         return {
             'name': self.name,
             'serviceId' : self.serviceId,
-            'device' : self.device.toData()
+            'sid': self.sid,
+            'dataType' : self.dataType,
+            'stype' : self.stype
         } 
 
     

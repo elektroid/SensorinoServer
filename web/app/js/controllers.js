@@ -60,11 +60,24 @@ sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
 	});
 
 sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $routeParams, Restangular) {
+
+        $scope.showForm=false;
+        $scope.activateForm = function(){
+            $scope.showForm=true;
+        }
+
         Restangular.setBaseUrl("http://127.0.0.1:5000/sensorino")
         var Rsensorino =   Restangular.all('');
         Rsensorino.get($routeParams.sId).then( function(sensorino){
             $scope.sensorino=sensorino;
         });
+
+        var RServices=Restangular.all($routeParams.sId+"/dataServices")
+        RServices.getList().then(function(services){
+            $scope.services=services;
+        });
+
+
     });
 
 

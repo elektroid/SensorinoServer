@@ -4,23 +4,21 @@ conn = sqlite3.connect('example.db')
 
 c = conn.cursor()
 
-c.execute('''DROP TABLE IF EXISTS services''')
-
-c.execute('''CREATE TABLE services
-             (serviceId INTEGER PRIMARY KEY, name text, stype text, sid text)''')
 
 
 c.execute('''DROP TABLE IF EXISTS sensorinos''')
-
 c.execute('''CREATE TABLE sensorinos
              (sid INTEGER PRIMARY KEY, name text, address text UNIQUE, description text, owner text, location text)''')
 
-c.execute('''DROP TABLE IF EXISTS dataServicesLog''')
 
+c.execute('''DROP TABLE IF EXISTS services''')
+c.execute('''CREATE TABLE services
+             (serviceId INTEGER PRIMARY KEY, name text, stype text, dataType text, sid integer)''')
+
+
+c.execute('''DROP TABLE IF EXISTS dataServicesLog''')
 c.execute('''CREATE TABLE dataServicesLog
              (sid integer, serviceId integer, value text, timestamp text)''')
-
-
 
 
 
