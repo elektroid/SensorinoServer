@@ -15,7 +15,7 @@ import serialEngine
 
 app = Flask(__name__)
 api = restful.Api(app)
-api.decorators=[cors.crossdomain(origin='*')]
+#api.decorators=[cors.crossdomain(origin='*')]
 
 
 def json_type(data):
@@ -58,18 +58,20 @@ class RestSensorino(restful.Resource):
             abort(404, message="no such sensorino")
         return sens.toData()
 
-    def put(self, id):
+    def put(self, sid):
         rparse = reqparse.RequestParser()   
         rparse.add_argument('address', type=str, required=True, help="your sensorino needs an address", location="json")
         rparse.add_argument('name', type=str, required=True, help="your sensorino needs a name", location="json")
         rparse.add_argument('description', type=str, required=True, help="Please give a brief description for your sensorin", location="json")
+
+        args = rparse.parse_args()
         sens=coreEngine.findSensorino(sid)
         sens.name=args['name']
         sens.address=args['address']
         sens.description=args['description']
 
         sens.saveToDb()
-        return sensorino.toData()
+        return sens.toData()
 
     def delete(self, sid):
         coreEngine.delSensorino(sid)
@@ -88,21 +90,27 @@ class DataServicesBySensorino(restful.Resource):
         return services
 
     def post(self, sid):
+        print("who dares awakening the planet smasher ?")
         rparse = reqparse.RequestParser()
+        print("who dares awakening the planet smasher 1?")
         rparse.add_argument('name', type=str, required=True, help="your service needs a name", location="json")
         rparse.add_argument('dataType', type=str, required=True, help="What kind of data ?", location="json")
         rparse.add_argument('location', type=str, required=False, help="Where is your device ?", location="json")
+        print("who dares awakening the planet smasher 2?")
         args =rparse.parse_args()
+        print("who dares awakening the planet smasher 3?")
         print(args)
         sensorinoId=int(sid)
         sens=coreEngine.findSensorino(sid=sensorinoId)
+        print("sens is")
+        print(sens)
         if (sens==None):
             abort(404, message="no such sensorino")
-        service=sensorino.DataService(args['name'])
-        service.setDataType(args['dataType'])
-        service.setSensorino(sens)
+        service=sensorino.DataService(args['name'], args['dataType'], sens.sid)
         status=service.saveToDb()
         sens.registerService(service)
+        print(service)
+        print(service.serviceId)
         return service.serviceId, 201
 
 
@@ -136,7 +144,45 @@ class DataServiceBySensorino(restful.Resource):
 
         return service.serviceId, 201
 
-        
+class PublishDataServiceBySensorino(restful.Resource):
+
+    def get(self, sid, serviceId):
+        services=[]
+#        print(coreEngine.getServicesBySensorino(sid))
+        for service in coreEngine.getServicesBySensorino(sid):
+            services.append(service)
+        return services
+
+    def post(self, sid):
+        print("who dares awakening the planet smasher ?")
+        rparse = reqparse.RequestParser()
+        print("who dares awakening the planet smasher 1?")
+        rparse.add_argument('name', type=str, required=True, help="your service needs a name", location="json")
+        rparse.add_argument('dataType', type=str, required=True, help="What kind of data ?", location="json")
+        rparse.add_argument('location', type=str, required=False, help="Where is your device ?", location="json")
+        print("who dares awakening the planet smasher 2?")
+        args =rparse.parse_args()
+        print("who dares awakening the planet smasher 3?")
+        print(args)
+        sensorinoId=int(sid)
+        sens=coreEngine.findSensorino(sid=sensorinoId)
+        print("sens is")
+        print(sens)
+        if (sens==None):
+            abort(404, message="no such sensorino")
+        service=sensorino.DataService(args['name'])
+        service.setDataType(args['dataType'])
+        service.setSensorino(sens)
+        status=service.saveToDb()
+        sens.registerService(service)
+        print(service)
+        print(service.serviceId)
+        return service.serviceId, 201
+
+      
+
+
+ 
 
 
 
@@ -154,6 +200,7 @@ api.add_resource(RestSensorinoList, '/sensorinos')
 api.add_resource(RestSensorino, '/sensorino/<int:sid>')
 api.add_resource(DataServicesBySensorino, '/sensorino/<int:sid>/dataServices')
 api.add_resource(DataServiceBySensorino, '/sensorino/<int:sid>/dataService/<int:serviceId>')
+api.add_resource(PublishDataServiceBySensorino, '/sensorino/<int:sid>/dataService/<int:serviceId>/data')
 
 
 

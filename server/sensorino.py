@@ -40,6 +40,7 @@ class Core:
         return self.sensorinos
 
     def loadSensorinos(self):
+
         global dbPath
         conn = sqlite3.connect(dbPath)
         conn.row_factory = dict_factory
@@ -175,25 +176,38 @@ class Sensorino:
 
     def saveToDb(self):
         logger.debug("insert/update sensorino in db")
-        global dbPath
-        conn = sqlite3.connect(dbPath)
-        c = conn.cursor()
         status=None
-        if (self.sid==None):
-            logger.debug("insert")
-            status=c.execute("INSERT INTO sensorinos ( name, address, description, owner, location) VALUES (?,?,?,?,?) ",(  self.name, self.address, self.description, self.owner, self.location))
-            self.sid=c.lastrowid
-        else:
-            status=c.execute("UPDATE sensorinos SET name=:name, address=:address, description=:description, owner=:owner, location=:location WHERE sid=:sid", self.toData())
-        conn.commit()
+        try:
+            global dbPath
+            conn = sqlite3.connect(dbPath)
+            c = conn.cursor()
+            status=None
+            if (self.sid==None):
+                logger.debug("insert")
+                status=c.execute("INSERT INTO sensorinos ( name, address, description, owner, location) VALUES (?,?,?,?,?) ",(  self.name, self.address, self.description, self.owner, self.location))
+                self.sid=c.lastrowid
+            else:
+                status=c.execute("UPDATE sensorinos SET name=:name, address=:address, description=:description, owner=:owner, location=:location WHERE sid=:sid", self.toData())
+            conn.commit()
+        except Exception as e:
+            print(e)
+            # Roll back any change if something goes wrong
+            conn.rollback()
         return status
 
     def deleteFromDb(self):
-        global dbPath
-        conn = sqlite3.connect(dbPath)
-        c = conn.cursor()
-        status=c.execute("DELETE FROM sensorinos WHERE sid=? ",( self.sid))
-        conn.commit()
+        status=None
+        try:
+            global dbPath
+            conn = sqlite3.connect(dbPath)
+            c = conn.cursor()
+            status=c.execute("DELETE FROM sensorinos WHERE sid=? ",( self.sid))
+            conn.commit()
+        except Exception as e:
+            print(e)
+            # Roll back any change if something goes wrong
+            conn.rollback()
+
         return status
 
         
@@ -280,41 +294,58 @@ class DataService(Service):
             logger.critical("unable to save service without sensorino")
             return None
 
-        print("save to db")
-        
-        global dbPath
-        conn = sqlite3.connect(dbPath)
-        c = conn.cursor()
-        status=None
-        if (self.serviceId==None):
-            logger.debug("INSERT service")
-            status=c.execute("INSERT INTO services ( name, stype, dataType, sid)  VALUES (?,?,?,?)",
-                ( self.name, self.stype, self.dataType, self.sid))
-            self.serviceId=c.lastrowid
-        else:
-            logger.debug("UPDATE service")
-            print(self.toData())
-            status=c.execute("UPDATE services SET stype=:stype WHERE sid=:sid AND serviceId=:serviceId LIMIT 1",
-                 self.toData())
-        conn.commit()
+        print("save dataservice to db")
+        try: 
+            global dbPath
+            conn = sqlite3.connect(dbPath)
+            c = conn.cursor()
+            status=None
+            if (self.serviceId==None):
+                logger.debug("INSERT service")
+                status=c.execute("INSERT INTO services ( name, stype, dataType, sid)  VALUES (?,?,?,?)",
+                    ( self.name, self.stype, self.dataType, self.sid))
+                self.serviceId=c.lastrowid
+            else:
+                logger.debug("UPDATE service")
+                print(self.toData())
+                status=c.execute("UPDATE services SET stype=:stype WHERE sid=:sid AND serviceId=:serviceId LIMIT 1",
+                     self.toData())
+            conn.commit()
+        except Exception as e:
+            print(e)
+            # Roll back any change if something goes wrong
+            conn.rollback()
+
         return status
         
     def deleteFromDb(self):
-        conn = sqlite3.connect(dbPath)
-        c = conn.cursor()
-        logger.debug("DELETE service")
-        status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1")
-        conn.commit()
+        try:
+            global dbPath
+            conn = sqlite3.connect(dbPath)
+            c = conn.cursor()
+            logger.debug("DELETE service")
+            status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1")
+            conn.commit()
+        except Exception as e:
+            print(e)
+            # Roll back any change if something goes wrong
+            conn.rollback()
         return status
 
     def logData(self, value):
-        conn = sqlite3.connect(dbPath)
-        c = conn.cursor()
-        logger.debug("Log data on sensorino"+str(self.sid)+" service: "+self.name+" data:"+value)
+        try:
+            global dbPath
+            conn = sqlite3.connect(dbPath)
+            c = conn.cursor()
+            logger.debug("Log data on sensorino"+str(self.sid)+" service: "+self.name+" data:"+value)
 
-        status=c.execute("INSERT INTO dataServicesLog (sid, serviceId, value, timestamp) VALUES (?,?,?,?) ",
-                 (str(self.sid), self.serviceId, value, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        conn.commit()
+            status=c.execute("INSERT INTO dataServicesLog (sid, serviceId, value, timestamp) VALUES (?,?,?,?) ",
+                     (str(self.sid), self.serviceId, value, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+        except Exception as e:
+            print(e)
+            # Roll back any change if something goes wrong
+            conn.rollback()
         return status
 
 

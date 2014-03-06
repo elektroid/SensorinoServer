@@ -12,12 +12,23 @@ Sensorino <b>{{sensorino.name}}</b>
 <div class="row">
     <h2>Services</h2>
     <table class="table">
-        <tr><th>Service name</th><th>type</th></th>device</th></tr>
-        <tr ng-repeat="service in services"><td>{{service.name}}</td><td>{{service.dataType}}</td><td>{{service.sid}}</td></tr>
+        <tr><th>Service name</th><th>type</th><th>serviceId</th><th/></tr> <!-- TODO: device -->
+        <tr ng-repeat="service in services">
+            <td>{{service.name}}</td>
+            <td>{{service.dataType}}</td>
+            <td>{{service.serviceId}}</td>
+            <td>
+                <button type="button" class="btn btn-default btn-lg" ng-click="deleteService(service.serviceId)">
+                     <span class="glyphicon glyphicon-remove"></span>
+                </button>
+            </td>
+        </tr>
     </table>
 </div>
 
- <span class="glyphicon glyphicon-plus"  ng-click="activateForm()"></span>
+<button type="button" class="btn btn-default btn-lg" ng-click="activateForm()">
+ <span class="glyphicon glyphicon-plus"></span>
+</button>
 
 
 <div class="row" id="serviceForm" name="serviceForm" ng-show="showForm">
@@ -40,8 +51,8 @@ Sensorino <b>{{sensorino.name}}</b>
         <div class="control-group">
           <label class="control-label" for="dataType">Choose data type</label>
           <div class="controls">
-            <select id="dataType" name="dataType" class="input-xlarge">
-              <option>Temp</option>
+            <select id="dataType" name="dataType" class="input-xlarge" ng-model="newService.dataType">
+              <option value="Temp">Temp</option>
               <option>Humidity</option>
               <option>Light</option>
             </select>

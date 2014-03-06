@@ -34,9 +34,14 @@ sensorinoApp.config(['$routeProvider', function($routeProvider) {
 
 
 sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
-		Restangular.setBaseUrl("http://127.0.0.1:5000")
+		Restangular.setBaseUrl("http://127.0.0.1:5001")
 		var Rsensorinos =  Restangular.all('sensorinos');
 		var Rsensorino =   Restangular.all('sensorino');
+
+        $scope.showForm=false;
+        $scope.activateForm = function(){
+            $scope.showForm=true;
+        }
 
 		Rsensorinos.getList().then(function(sensorinos){
 			$scope.sensorinos=sensorinos;
@@ -66,16 +71,36 @@ sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $routeParams, R
             $scope.showForm=true;
         }
 
-        Restangular.setBaseUrl("http://127.0.0.1:5000/sensorino")
-        var Rsensorino =   Restangular.all('');
+        Restangular.setBaseUrl("http://127.0.0.1:5001")
+        var Rsensorino =   Restangular.all('sensorino');
         Rsensorino.get($routeParams.sId).then( function(sensorino){
             $scope.sensorino=sensorino;
         });
 
-        var RServices=Restangular.all($routeParams.sId+"/dataServices")
-        RServices.getList().then(function(services){
-            $scope.services=services;
-        });
+        var RServices=Restangular.all("/sensorino/"+$routeParams.sId+"/dataServices")
+        $scope.loadServices=function(){
+            RServices.getList().then(function(services){
+                $scope.services=services;
+            });
+        }
+
+        $scope.createService = function(newService){
+            console.log("createService:");
+            console.log(newService);
+            RServices.post(newService).then($scope.loadServices())
+        }
+
+        $scope.deleteService = function(serviceId){
+            console.log("delete service :");
+            console.log(serviceId);
+            var RService=Restangular.one("/sensorino/"+$routeParams.sId+"/dataService/"+serviceId)
+            RService.remove().then($scope.loadServices())
+        }
+
+
+        $scope.loadServices();
+        
+
 
 
     });
