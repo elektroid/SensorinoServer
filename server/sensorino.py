@@ -152,6 +152,7 @@ class Sensorino:
     def removeService(self, serviceId):
         for service in self.services:
             if (service.serviceId == serviceId):
+                print("remove sercice from senso")
                 self.remove(service)
                 break
     
@@ -319,12 +320,14 @@ class DataService(Service):
         return status
         
     def deleteFromDb(self):
+
+        status=None
         try:
             global dbPath
             conn = sqlite3.connect(dbPath)
             c = conn.cursor()
             logger.debug("DELETE service")
-            status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1")
+            status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1", self.toData())
             conn.commit()
         except Exception as e:
             print(e)
@@ -333,6 +336,7 @@ class DataService(Service):
         return status
 
     def logData(self, value):
+        status=None
         try:
             global dbPath
             conn = sqlite3.connect(dbPath)

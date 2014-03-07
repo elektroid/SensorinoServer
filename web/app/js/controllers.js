@@ -36,30 +36,43 @@ sensorinoApp.config(['$routeProvider', function($routeProvider) {
 sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
 		Restangular.setBaseUrl("http://127.0.0.1:5001")
 		var Rsensorinos =  Restangular.all('sensorinos');
-		var Rsensorino =   Restangular.all('sensorino');
 
         $scope.showForm=false;
         $scope.activateForm = function(){
             $scope.showForm=true;
         }
 
-		Rsensorinos.getList().then(function(sensorinos){
-			$scope.sensorinos=sensorinos;
-		});
-	
+        $scope.loadSensorinos=function(){
+            Rsensorinos.getList().then(function(sensorinos){
+			    $scope.sensorinos=sensorinos;
+            });
+		}
+
+        $scope.loadSensorinos();			
 
 		$scope.deleteSensorino = function(sid){
 			console.log("delete sid");
 			console.log(sid);
+            Restangular.one('sensorino', sid).remove();
+    /*.then(function(){
+                 $scope.loadSensorinos();
+            });
+*/
+
 		}
 
 		$scope.createSensorino = function(mySensorino){
-			console.log("create one");
-			Rsensorinos.post(mySensorino);
-		}	
+			console.log("create one then clean");
+			Rsensorinos.post(mySensorino).then(function(){
+                $scope.reset();
+                $scope.loadSensorinos();
+            });
+		}
+
 
 		$scope.reset = function(){ 
 			console.log("clear stuff");
+            $scope.showForm=false;
 		}
 
 	});
@@ -72,12 +85,12 @@ sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $routeParams, R
         }
 
         Restangular.setBaseUrl("http://127.0.0.1:5001")
-        var Rsensorino =   Restangular.all('sensorino');
+        var Rsensorino =   Restangular.all('sensorinos');
         Rsensorino.get($routeParams.sId).then( function(sensorino){
             $scope.sensorino=sensorino;
         });
 
-        var RServices=Restangular.all("/sensorino/"+$routeParams.sId+"/dataServices")
+        var RServices=Restangular.all("sensorinos/"+$routeParams.sId+"/dataServices")
         $scope.loadServices=function(){
             RServices.getList().then(function(services){
                 $scope.services=services;
@@ -93,8 +106,9 @@ sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $routeParams, R
         $scope.deleteService = function(serviceId){
             console.log("delete service :");
             console.log(serviceId);
-            var RService=Restangular.one("/sensorino/"+$routeParams.sId+"/dataService/"+serviceId)
+            var RService=Restangular.one("sensorinos/"+$routeParams.sId+"/dataServices/"+serviceId)
             RService.remove().then($scope.loadServices())
+ //           $scope.services[2].remove();
         }
 
 

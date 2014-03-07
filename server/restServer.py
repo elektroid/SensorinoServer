@@ -48,7 +48,7 @@ class RestSensorinoList(restful.Resource):
         sens.saveToDb()
         coreEngine.addSensorino(sens)
         print(sens.toData())
-        return sens.sid, 201
+        return sens.sid
 
 class RestSensorino(restful.Resource):
 
@@ -75,7 +75,7 @@ class RestSensorino(restful.Resource):
 
     def delete(self, sid):
         coreEngine.delSensorino(sid)
-        return sid, 201
+        return sid
 
 
 
@@ -119,7 +119,7 @@ class DataServiceBySensorino(restful.Resource):
 
     def get(self, sid, serviceId):
         sensorinoId=sid
-        sens=coreEngine.findSensorino(sid=sensorinoId)
+        sens=coreEngine.findSensorino(sid=sid)
         if (sens==None):
             abort(404, message="no such sensorino")
 
@@ -131,7 +131,7 @@ class DataServiceBySensorino(restful.Resource):
 
 
     def delete(self, sid, serviceId):
-        sens=coreEngine.findSensorino(sid=sensorinoId)
+        sens=coreEngine.findSensorino(sid=sid)
         if (sens==None):
             abort(404, message="no such sensorino")
    
@@ -139,10 +139,12 @@ class DataServiceBySensorino(restful.Resource):
         if (service==None):
             abort(404, message="no such service")
 
+        print("fuck this service")
+        print(service)
         sens.removeService(service)
         service.deleteFromDb()
 
-        return service.serviceId, 201
+        return service.serviceId
 
 class PublishDataServiceBySensorino(restful.Resource):
 
@@ -197,10 +199,10 @@ class SerialThread(threading.Thread):
 
 
 api.add_resource(RestSensorinoList, '/sensorinos')
-api.add_resource(RestSensorino, '/sensorino/<int:sid>')
-api.add_resource(DataServicesBySensorino, '/sensorino/<int:sid>/dataServices')
-api.add_resource(DataServiceBySensorino, '/sensorino/<int:sid>/dataService/<int:serviceId>')
-api.add_resource(PublishDataServiceBySensorino, '/sensorino/<int:sid>/dataService/<int:serviceId>/data')
+api.add_resource(RestSensorino, '/sensorinos/<int:sid>')
+api.add_resource(DataServicesBySensorino, '/sensorinos/<int:sid>/dataServices')
+api.add_resource(DataServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>')
+#api.add_resource(PublishDataServiceBySensorino, '/sensorino/<int:sid>/dataService/<int:serviceId>/data')
 
 
 
