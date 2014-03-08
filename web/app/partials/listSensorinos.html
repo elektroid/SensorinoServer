@@ -13,7 +13,7 @@
             <!--Body content-->
                 <ul class="sensorinos">
                 <li ng-repeat="sens in sensorinos | filter:query ">
-                    <b>{{sens.name}}</b>
+                    <a href="#/sensorino/{{sens.sid}}">{{sens.name}}</a>
                         {{sens.description}} with id {{sens.sid}} is at {{sens.location}}
                     <button ng-click="deleteSensorino(sens.sid)">delete {{sens.sid}}</button>
                 </li>

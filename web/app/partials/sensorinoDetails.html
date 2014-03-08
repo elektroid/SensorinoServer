@@ -1,29 +1,38 @@
-<!-- Base info on sensorino -->
-<div class="row">
-<h2><small>sensorino:</small> {{sensorino.name}}</h2>
-Sensorino <b>{{sensorino.name}}</b>
-...
-
-
-
-</div>
 
 <!-- Services -->
 <div class="row">
-    <h2>Services</h2>
-    <table class="table">
-        <tr><th>Service name</th><th>type</th><th>serviceId</th><th/></tr> <!-- TODO: device -->
-        <tr ng-repeat="service in services">
-            <td>{{service.name}}</td>
-            <td>{{service.dataType}}</td>
-            <td>{{service.serviceId}}</td>
-            <td>
-                <button type="button" class="btn btn-default btn-lg" ng-click="deleteService(service.serviceId)">
-                     <span class="glyphicon glyphicon-remove"></span>
-                </button>
-            </td>
-        </tr>
-    </table>
+     <!--Sidebar content-->
+    <div class="col-sm-3 col-md-2 sidebar">
+        <ul class="nav nav-sidebar">
+            <li class="active"><a href="#/sensorinos">Sensorinos</a></li>
+            <li><a href="#">Graphs</a></li>
+        </ul>
+    </div>
+
+    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <h2><small>sensorino:</small> {{sensorino.name}}</h2>
+        Sensorino <b>{{sensorino.name}}</b>
+
+        <h2>Services</h2>
+        <table class="table">
+            <tr><th>Service name</th><th>type</th><th>serviceId</th><th/><th/></tr> <!-- TODO: device -->
+            <tr ng-repeat="service in services">
+                <td><a href="#/sensorino/{{sensorino.sid}}/dataServices/{{service.serviceId}}">{{service.name}}</a></td>
+                <td>{{service.dataType}}</td>
+                <td>{{service.serviceId}}</td>
+                <td>
+                    <button type="button" class="btn btn-default btn-lg" ng-click="move('#/sensorino/'+sensorino.sid+'/dataServices/'+service.serviceId)">
+                         <span class="glyphicon glyphicon-stats"></span>
+                    </button>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-default btn-lg" ng-click="deleteService(service.serviceId)">
+                         <span class="glyphicon glyphicon-remove"></span>
+                    </button>
+                </td>
+            </tr>
+        </table>
+    </div>
 </div>
 
 <button type="button" class="btn btn-default btn-lg" ng-click="activateForm()">

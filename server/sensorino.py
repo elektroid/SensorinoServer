@@ -76,11 +76,7 @@ class Core:
             self.sensorinos.remove(s) 
         
     def findSensorino(self, sid=None, address=None):
-        print("search sensorino with id:"+str(sid))
         for sens in self.sensorinos:
-            print("this one is :"+str(sens.sid))
-            if (sid==sens.sid):
-                print("got it")
             if ((sid!=None and sens.sid == sid) or(address!=None and sens.address==address)):
                 return sens
         return None
@@ -91,7 +87,6 @@ class Core:
         conn = sqlite3.connect(dbPath)
         conn.row_factory = dict_factory
         c = conn.cursor()
-        print(sid)
         status=c.execute("SELECT * FROM services WHERE sid=:sid ",   {"sid": sid})
 
         rows = c.fetchall()
@@ -152,7 +147,6 @@ class Sensorino:
     def removeService(self, serviceId):
         for service in self.services:
             if (service.serviceId == serviceId):
-                print("remove sercice from senso")
                 self.remove(service)
                 break
     
@@ -295,7 +289,6 @@ class DataService(Service):
             logger.critical("unable to save service without sensorino")
             return None
 
-        print("save dataservice to db")
         try: 
             global dbPath
             conn = sqlite3.connect(dbPath)
@@ -308,7 +301,6 @@ class DataService(Service):
                 self.serviceId=c.lastrowid
             else:
                 logger.debug("UPDATE service")
-                print(self.toData())
                 status=c.execute("UPDATE services SET stype=:stype WHERE sid=:sid AND serviceId=:serviceId LIMIT 1",
                      self.toData())
             conn.commit()
@@ -351,6 +343,17 @@ class DataService(Service):
             # Roll back any change if something goes wrong
             conn.rollback()
         return status
+
+    def getLogs(self, sid):
+        global dbPath
+        conn = sqlite3.connect(dbPath)
+        conn.row_factory = dict_factory
+        c = conn.cursor()
+
+        c.execute("SELECT value, timestamp FROM dataServicesLog WHERE serviceId=:serviceId AND sid=:sid", self.toData())
+        rows = c.fetchall()
+        return rows
+
 
 
     def toData(self):

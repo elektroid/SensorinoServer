@@ -41,13 +41,10 @@ class RestSensorinoList(restful.Resource):
         rparse.add_argument('address', type=str, required=True, help="your sensorino needs an address", location="json")
         rparse.add_argument('name', type=str, required=True, help="your sensorino needs a name", location="json")
         rparse.add_argument('description', type=str, required=True, help="Please give a brief description for your sensorin", location="json")
-        print("lets parse")
         args = rparse.parse_args()
-        print(args)
         sens=sensorino.Sensorino( args['name'], args['address'], args['description'])
         sens.saveToDb()
         coreEngine.addSensorino(sens)
-        print(sens.toData())
         return sens.sid
 
 class RestSensorino(restful.Resource):
@@ -84,33 +81,23 @@ class DataServicesBySensorino(restful.Resource):
 
     def get(self, sid):
         services=[]
-#        print(coreEngine.getServicesBySensorino(sid))
         for service in coreEngine.getServicesBySensorino(sid):
             services.append(service)
         return services
 
     def post(self, sid):
-        print("who dares awakening the planet smasher ?")
         rparse = reqparse.RequestParser()
-        print("who dares awakening the planet smasher 1?")
         rparse.add_argument('name', type=str, required=True, help="your service needs a name", location="json")
         rparse.add_argument('dataType', type=str, required=True, help="What kind of data ?", location="json")
         rparse.add_argument('location', type=str, required=False, help="Where is your device ?", location="json")
-        print("who dares awakening the planet smasher 2?")
         args =rparse.parse_args()
-        print("who dares awakening the planet smasher 3?")
-        print(args)
         sensorinoId=int(sid)
         sens=coreEngine.findSensorino(sid=sensorinoId)
-        print("sens is")
-        print(sens)
         if (sens==None):
             abort(404, message="no such sensorino")
         service=sensorino.DataService(args['name'], args['dataType'], sens.sid)
         status=service.saveToDb()
         sens.registerService(service)
-        print(service)
-        print(service.serviceId)
         return service.serviceId, 201
 
 
@@ -139,8 +126,6 @@ class DataServiceBySensorino(restful.Resource):
         if (service==None):
             abort(404, message="no such service")
 
-        print("fuck this service")
-        print(service)
         sens.removeService(service)
         service.deleteFromDb()
 
@@ -149,38 +134,31 @@ class DataServiceBySensorino(restful.Resource):
 class PublishDataServiceBySensorino(restful.Resource):
 
     def get(self, sid, serviceId):
-        services=[]
-#        print(coreEngine.getServicesBySensorino(sid))
-        for service in coreEngine.getServicesBySensorino(sid):
-            services.append(service)
-        return services
-
-    def post(self, sid):
-        print("who dares awakening the planet smasher ?")
-        rparse = reqparse.RequestParser()
-        print("who dares awakening the planet smasher 1?")
-        rparse.add_argument('name', type=str, required=True, help="your service needs a name", location="json")
-        rparse.add_argument('dataType', type=str, required=True, help="What kind of data ?", location="json")
-        rparse.add_argument('location', type=str, required=False, help="Where is your device ?", location="json")
-        print("who dares awakening the planet smasher 2?")
-        args =rparse.parse_args()
-        print("who dares awakening the planet smasher 3?")
-        print(args)
         sensorinoId=int(sid)
         sens=coreEngine.findSensorino(sid=sensorinoId)
-        print("sens is")
-        print(sens)
         if (sens==None):
             abort(404, message="no such sensorino")
-        service=sensorino.DataService(args['name'])
-        service.setDataType(args['dataType'])
-        service.setSensorino(sens)
-        status=service.saveToDb()
-        sens.registerService(service)
-        print(service)
-        print(service.serviceId)
-        return service.serviceId, 201
+        service=sens.getService(serviceId)
+        if (service==None):
+            abort(404, message="no such service")
+        
+        return service.getLogs(sid)
 
+
+    def post(self, sid, serviceId):
+        rparse = reqparse.RequestParser()
+        rparse.add_argument('data', type=str, required=True, help="are you loging data ?", location="json")
+        args =rparse.parse_args()
+        sensorinoId=int(sid)
+        sens=coreEngine.findSensorino(sid=sensorinoId)
+        if (sens==None):
+            abort(404, message="no such sensorino")
+        service=sens.getService(serviceId)
+        if (service==None):
+            abort(404, message="no such service")
+
+        service.logData(args['data']);
+        return service.toData()
       
 
 
@@ -194,7 +172,6 @@ class SerialThread(threading.Thread):
         threading.Thread.__init__(self)
     def run (self):
         while True:
-            print("serial thread")
             time.sleep(10)
 
 
@@ -202,12 +179,12 @@ api.add_resource(RestSensorinoList, '/sensorinos')
 api.add_resource(RestSensorino, '/sensorinos/<int:sid>')
 api.add_resource(DataServicesBySensorino, '/sensorinos/<int:sid>/dataServices')
 api.add_resource(DataServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>')
-#api.add_resource(PublishDataServiceBySensorino, '/sensorino/<int:sid>/dataService/<int:serviceId>/data')
+api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>/data')
 
 
 
 if __name__ == '__main__':
-    print("hello")
+    print("hello, start server")
     #serial=SerialThread()
     #serial.start()
     app.config['PROPAGATE_EXCEPTIONS'] = True
