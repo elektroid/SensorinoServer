@@ -1,4 +1,6 @@
 import logging
+import serial
+import json
 
 # create logger with 'spam_application'
 logger = logging.getLogger('serial_engine')
@@ -26,34 +28,38 @@ class SerialEngine:
     '/dev/ttyS0','/dev/ttyS1',
     '/dev/ttyS2','/dev/ttyS3'] # TODO : complete list
 
-    windowsPossibleSerialPorts=['COM1', 'COM2', 'COM3', 'COM4'] # TODO : complete list
+    windowsPossibleSerialPorts=['\\.\COM1', '\\.\COM2', '\\.\COM3', '\\.\COM4'] # TODO : complete list
 
 
     def __init__(self, port=None):
         self.port=port
         if (port==None):
-            for device in SerialEngine.linuxPossibleSerialPorts:
+            for device in SerialEngine.windowsPossibleSerialPorts:
                 try:
-                    port = Serial(device, 9600) 
+                    self.port = serial.Serial(device, 57600)
+                    break
                 except:
-                    logger.debug("arduino not on "+device);
+                    logger.debug("arduino not on "+device)
+        else:
+            self.port = serial.Serial(port, 57600)
 
     def isReady(self):
         return self.port!=None
 
     def startParsing(self, messageProcessor):
         while True:
-            message=parse(port.readline())  
+            message=self.parse(self.port.readline())
             if (message!=None):
                 messageProcessor.processMessage(message)
-                        
 
-    def parse(line):
+
+    def parse(self, line):
+        print("parsing: "+line)
         try:
             message=json.loads(line)
             return message
         except:
-            logger.error("fail to parse json message")
+            logger.error("fail to parse json message: "+line)
             return None
 
 

@@ -65,7 +65,7 @@ class Core:
             if (sens.sid == sensorino.sid and sens.address==sensorino.address):
                 logger.warn("unable to add your sensorino")
                 return None
-        return self.sensorinos.append(sensorino)            
+        return self.sensorinos.append(sensorino)
 
     def delSensorino(self, sid):
         s = self.findSensorino(sid=sid)
@@ -73,8 +73,8 @@ class Core:
             logger.debug("not deleting sensorino as already missing")
             return True
         else:
-            self.sensorinos.remove(s) 
-        
+            self.sensorinos.remove(s)
+
     def findSensorino(self, sid=None, address=None):
         for sens in self.sensorinos:
             if ((sid!=None and sens.sid == sid) or(address!=None and sens.address==address)):
@@ -93,7 +93,7 @@ class Core:
         conn.commit()
 
         return rows
- 
+
 
     # the core should read serial port and generate events
     def onDataLog(self, sid, serviceId, data):
@@ -119,13 +119,17 @@ class Core:
                 logger.error("received message from unknown sensorino")
             else:
                 self.onDataLog(sens.sid, message["srcService"], message["data"])
+        if(message["internal"]1=None):
+            msg=message["internals"]
+            sens=self.findSensorino(sid=1)
+            self.onDataLog(1, 1, msg["temp"])
 
 
 class SerialGenerator:
 
     def generatePublish():
         return '{ "srcAddress": "123", "srcService": "temp1", "command": "publishData", "data": "12.6"}'
-    
+
 
 
 
@@ -149,7 +153,7 @@ class Sensorino:
             if (service.serviceId == serviceId):
                 self.remove(service)
                 break
-    
+
 
     def getService(self, serviceId):
         for service in self.services:
@@ -205,7 +209,7 @@ class Sensorino:
 
         return status
 
-        
+
 
 class Device:
     def __init__(self, name, location, did):
@@ -275,7 +279,7 @@ class Service():
     def persist(self):
         if (self.sid==None):
             raise(Exception("Can't persist orphan service"))
-    
+
 
 class DataService(Service):
     def __init__(self, name, dataType, sid, serviceId=None):
@@ -289,7 +293,7 @@ class DataService(Service):
             logger.critical("unable to save service without sensorino")
             return None
 
-        try: 
+        try:
             global dbPath
             conn = sqlite3.connect(dbPath)
             c = conn.cursor()
@@ -310,7 +314,7 @@ class DataService(Service):
             conn.rollback()
 
         return status
-        
+
     def deleteFromDb(self):
 
         status=None
@@ -363,9 +367,9 @@ class DataService(Service):
             'sid': self.sid,
             'dataType' : self.dataType,
             'stype' : self.stype
-        } 
+        }
 
-    
-    
+
+
 
 
