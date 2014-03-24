@@ -3,7 +3,7 @@
 /* Controllers */
 
 
-var sensorinoApp = angular.module('sensorinoApp', ['restangular', 'ngRoute' ]);
+var sensorinoApp = angular.module('sensorinoApp', ['restangular', 'ngRoute', 'angularCharts' ]);
 //var sensorinoApp = angular.module('sensorinoApp', []);
 
 sensorinoApp.config(['$httpProvider', function($httpProvider) {
@@ -18,8 +18,8 @@ sensorinoApp.config(['$routeProvider', function($routeProvider) {
             templateUrl: 'partials/listSensorinos.html',
             controller: 'MainCtrl'
         }).
-        when('/graphs', {
-            templateUrl: 'partials/graphs.html',
+        when('/charts', {
+            templateUrl: 'partials/charts.html',
             controller: 'GraphsCtrl'
         }).
         when('/sensorino/:sId', {
@@ -140,6 +140,45 @@ sensorinoApp.controller('ServiceDataLogCtrl',  function($scope, $routeParams, Re
         });
     }
     $scope.loadService();
+
+});
+
+
+sensorinoApp.controller('GraphsCtrl',  function($scope, $routeParams, Restangular) {
+
+    // 'pie', 'bar', 'line', 'point', 'area'
+    $scope.chartType = 'line';
+
+    $scope.config = {
+        labels: false,
+        title : "Not Products",
+        legend : {
+            display:true,
+            position:'left'
+        }
+    }
+
+    $scope.data = {
+        series: ['Sales', 'Income', 'Expense', 'Laptops', 'Keyboards'],
+        data : [{
+                    x : "Sales",
+                    y: [100,500, 0],
+                    tooltip:"this is tooltip"
+                },
+                {
+                    x : "Not Sales",
+                    y: [300, 100, 100]
+                },
+                {
+                    x : "Tax",
+                    y: [351]
+                },
+                {
+                    x : "Not Tax",
+                    y: [54, 0, 879]
+                }]
+    }
+
 
 });
 
