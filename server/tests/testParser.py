@@ -1,24 +1,21 @@
 #-------------------------------------------------------------------------------
-# Name:        modulo1
 # Purpose:
 #
+# Author:      Elektroid
 #
-# Created:     08/03/2014
-# Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
 import sys
 sys.path.append("..")
 import json
-import serialEngine
 import messageParser
 
 
 def main():
     parser=messageParser.MessageParser()
+    json_data = open(sys.argv[1])
+    parser.processMessage(json.load(json_data))
 
-    engine=serialEngine.SerialEngine("\\.\COM3")
-    engine.startParsing(parser)
 
 
 if __name__ == '__main__':
