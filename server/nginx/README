@@ -1,6 +1,0 @@
-flask restful cors extension sucks
-
-We can use nginx
-http://enable-cors.org/server_nginx.html
-
-The nginx conf in this directoty can also be used (launch start.sh)

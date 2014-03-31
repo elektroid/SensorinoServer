@@ -187,7 +187,10 @@ if __name__ == '__main__':
     print("hello, start server")
     #serial=SerialThread()
     #serial.start()
+   # coreEngine.mqttClient.subscribe("sensorino", 0)
+    coreEngine.startMqtt()
     app.config['PROPAGATE_EXCEPTIONS'] = True
+
     app.run(debug=True)
 
 

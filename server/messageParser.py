@@ -14,7 +14,7 @@ class MessageParser:
 
         if("PublishMessage" in message):
             msg=message["PublishMessage"]
-            self.onDataLog(MessageParser.serializeAddress(msg["address"]), msg["service"], msg["data"])
+            self.onPublish(MessageParser.serializeAddress(msg["address"]), msg["service"], msg["data"])
         elif("Ping" in message):
             msg=message["Ping"]
             self.onPing(MessageParser.serializeAddress(msg["address"]))
@@ -23,11 +23,11 @@ class MessageParser:
             self.onPong(MessageParser.serializeAddress(msg["address"]))
         elif("internals" in message):
             msg=message["internals"]
-            self.onDataLog(1, 1, msg["temp"])
+            self.onPublish(1, 1, msg["temp"])
         else:
             print "NOT SUPPORTED"
 
-    def onDataLog(self, sensoId, serviceId, data):
+    def onPublish(self, sensoId, serviceId, data):
         print("should log "+str(data)+" on senso "+str(sensoId)+" /service:"+str(serviceId))
 
     def onPing(self, sensAddr):

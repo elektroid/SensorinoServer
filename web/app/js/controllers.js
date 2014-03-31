@@ -30,6 +30,10 @@ sensorinoApp.config(['$routeProvider', function($routeProvider) {
             templateUrl: 'partials/serviceDataLog.html',
             controller: 'ServiceDataLogCtrl'
         }).
+        when('/sensorino/:sId/actuatorServices/:serviceId', {
+            templateUrl: 'partials/serviceDetails.html',
+            controller: 'ServiceDetailsCtrl'
+        }).
         otherwise({
             redirectTo: '/sensorinos'
         });
@@ -38,7 +42,7 @@ sensorinoApp.config(['$routeProvider', function($routeProvider) {
 
 
 sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
-		Restangular.setBaseUrl("http://127.0.0.1:5001")
+		Restangular.setBaseUrl("http://127.0.0.1")
 		var Rsensorinos =  Restangular.all('sensorinos');
 
         $scope.showForm=false;
@@ -140,6 +144,15 @@ sensorinoApp.controller('ServiceDataLogCtrl',  function($scope, $routeParams, Re
         });
     }
     $scope.loadService();
+
+});
+
+sensorinoApp.controller('ServiceDetailsCtrl',  function($scope, $routeParams, Restangular) {
+
+    $scope.service= { type: "relay"};
+    $scope.currentState = 'on';
+    $scope.validStates = [ 'on', 'off', 'blink', "failed"];
+
 
 });
 

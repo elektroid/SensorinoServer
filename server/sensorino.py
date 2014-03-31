@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 import logging
+import threading
 import sqlite3
+import mosquitto
 import datetime
 import json
 import serialEngine
+import ConfigParser
 
 # create logger with 'spam_application'
 logger = logging.getLogger('sensorino_application')
@@ -30,17 +33,63 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
+class MqttThread(threading.Thread):
+    def __init__(self, mqttClient):
+        self._engine = serialEngine.SerialEngine()
+        self._mqttClient=mqttClient
+        threading.Thread.__init__(self)
+        self.daemon = True
+    def run (self):
+        self._mqttClient.connect("127.0.0.1", 1883, 60)
+        self._mqttClient.loop_forever()
 
 class Core:
     def __init__(self):
+        self.readConfig()
         self.sensorinos=[]
         self.loadSensorinos()
+        self.serial=None
+        self.mqttClient = self._createMqttClient()
+
+    def readConfig(self, filename="sensorino.ini"):
+        self.config=Config = ConfigParser.ConfigParser()
+        self.config.read(filename)
+
+
+    def _createMqttClient(self):
+        def mqtt_on_connect(mosq, obj, rc):
+            mqttc.subscribe("sensorino", 0)
+            mqttc.publish("sensorino", "heuu", 0)
+            print("rc: "+str(rc))
+
+        def mqtt_on_message(mosq, obj, msg):
+            print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
+
+        def mqtt_on_publish(mosq, obj, mid):
+            print("mid: "+str(mid))
+
+        def mqtt_on_subscribe(mosq, obj, mid, granted_qos):
+            print("Subscribed: "+str(mid)+" "+str(granted_qos))
+
+        def mqtt_on_log(mosq, obj, level, string):
+            print(string)
+
+        mqttc=mosquitto.Mosquitto()
+        mqttc.on_message = mqtt_on_message
+        mqttc.on_connect = mqtt_on_connect
+        mqttc.on_publish = mqtt_on_publish
+        mqttc.on_subscribe = mqtt_on_subscribe
+        # Uncomment to enable debug messages
+        #mqttc.on_log = on_log
+        mqttc.connect(self.config.get("Mqtt", "ServerAddress"), 1883, 60)
+        
+        return mqttc
+
 
     def getSensorinos(self):
         return self.sensorinos
 
     def loadSensorinos(self):
-
         global dbPath
         conn = sqlite3.connect(dbPath)
         conn.row_factory = dict_factory
@@ -81,7 +130,6 @@ class Core:
                 return sens
         return None
 
-
     def getServicesBySensorino(self, sid):
         global dbPath
         conn = sqlite3.connect(dbPath)
@@ -94,9 +142,8 @@ class Core:
 
         return rows
 
-
     # the core should read serial port and generate events
-    def onDataLog(self, sid, serviceId, data):
+    def onPublish(self, sid, serviceId, data):
         sens=findSensorino(sid)
         if (sens==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
@@ -107,29 +154,24 @@ class Core:
             return
         return service.logData(data)
 
+    def onSetState(self, sid, serviceId, sensorinoAddress, state):
+        self.serial.write("{"+
+            "'setState':"+
+            "{"+
+            "    'address':'"+sensorinoAddress+"',"+
+            "    'serviceId':'"+serviceId+"',"+
+            "    'serviceType':'x',"+
+            "    'state':'"+state+"'"+
+            "}")
 
-    def start(self):
-        serial=SerialEngine()
+    def startSerial(self):
+        self.serial=SerialEngine()
         serial.start()
 
-    def processMessage(self, message):
-        if (message["command"] == "publishData"):
-            sens=self.findSensorino(address=message['srcAddress'])
-            if (sens==None):
-                logger.error("received message from unknown sensorino")
-            else:
-                self.onDataLog(sens.sid, message["srcService"], message["data"])
-        if(message["internal"]1=None):
-            msg=message["internals"]
-            sens=self.findSensorino(sid=1)
-            self.onDataLog(1, 1, msg["temp"])
-
-
-class SerialGenerator:
-
-    def generatePublish():
-        return '{ "srcAddress": "123", "srcService": "temp1", "command": "publishData", "data": "12.6"}'
-
+    def startMqtt(self):
+        thread=MqttThread(self.mqttClient)
+        thread.start()
+        return thread
 
 
 
@@ -274,19 +316,14 @@ class Service():
         self.name=name
         self.serviceId=serviceId
         self.sid=None
+        self.stype=None
+
     def setSensorino(self, s):
         self.sid=s.sid
+
     def persist(self):
         if (self.sid==None):
             raise(Exception("Can't persist orphan service"))
-
-
-class DataService(Service):
-    def __init__(self, name, dataType, sid, serviceId=None):
-        Service.__init__( self, name, serviceId)
-        self.dataType=dataType
-        self.sid=sid
-        self.stype="DATA"
 
     def saveToDb(self):
         if (self.sid==None):
@@ -331,6 +368,25 @@ class DataService(Service):
             conn.rollback()
         return status
 
+    def toData(self):
+        return {
+            'name': self.name,
+            'serviceId' : self.serviceId,
+            'sid': self.sid,
+            'dataType' : self.dataType,
+            'stype' : self.stype
+        }
+
+
+
+
+class DataService(Service):
+    def __init__(self, name, dataType, sid, serviceId=None):
+        Service.__init__( self, name, serviceId)
+        self.dataType=dataType
+        self.sid=sid
+        self.stype="DATA"
+
     def logData(self, value):
         status=None
         try:
@@ -360,16 +416,14 @@ class DataService(Service):
 
 
 
-    def toData(self):
-        return {
-            'name': self.name,
-            'serviceId' : self.serviceId,
-            'sid': self.sid,
-            'dataType' : self.dataType,
-            'stype' : self.stype
-        }
+class ActuatorService(Service):
 
+    def __init__(self, name, dataType, sid, serviceId=None):
+        Service.__init__( self, name, serviceId)
+        self.dataType=dataType
+        self.sid=sid
+        self.stype="ACTUATOR"
 
-
-
+    def setState(self, state):
+        self.state=state
 
