@@ -52,7 +52,7 @@ class Core:
         self.mqttClient = self._createMqttClient()
 
     def readConfig(self, filename="sensorino.ini"):
-        self.config=Config = ConfigParser.ConfigParser()
+        self.config = ConfigParser.ConfigParser()
         self.config.read(filename)
 
 
