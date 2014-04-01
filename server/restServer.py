@@ -15,7 +15,6 @@ import serialEngine
 
 app = Flask(__name__)
 api = restful.Api(app)
-#api.decorators=[cors.crossdomain(origin='*')]
 
 
 def json_type(data):
@@ -185,8 +184,6 @@ api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<int:sid>/dataServi
 
 if __name__ == '__main__':
     print("hello, start server")
-    #serial=SerialThread()
-    #serial.start()
    # coreEngine.mqttClient.subscribe("sensorino", 0)
     coreEngine.startMqtt()
     app.config['PROPAGATE_EXCEPTIONS'] = True

@@ -6,6 +6,7 @@ import json
 import time
 import datetime
 import ConfigParser
+import mosquitto
 
 
 # create logger with 'spam_application'
@@ -29,6 +30,19 @@ config=ConfigParser.ConfigParser()
 config.read("sensorino.ini")
 
 
+# we want to receive order events
+mqttc=mosquitto.Mosquitto()
+mqttc.on_message = mqtt_on_message
+mqttc.on_connect = mqtt_on_connect
+mqttc.on_publish = mqtt_on_publish
+mqttc.on_subscribe = mqtt_on_subscribe
+# Uncomment to enable debug messages
+#mqttc.on_log = on_log
+mqttc.connect(self.config.get("Mqtt", "ServerAddress"), 1883, 60)
+mqttc.subscribe("commands", 0)
+
+
+
 
 httplib2.debuglevel     = 0
 http                    = httplib2.Http()
@@ -50,6 +64,8 @@ class SerialGateway:
     def __init__(self, port=None):
         self.protocol=protocol.Protocol()
         self.protocol.on_publish=on_publish
+        self.mqtt=mqtt
+        self.mqtt.on_message=on_mqtt_message
         self.port=port
         if (port==None):
             for device in SerialEngine.windowsPossibleSerialPorts:
@@ -62,6 +78,14 @@ class SerialGateway:
             self.port = serial.Serial(port, 57600)
 
 
+    def on_mqtt_message(mqtt, obj, msg):
+        logger.debug("msg from mosquitto: "+json.dumps(msg))
+        if ("commands" == msg.topic):
+            command=msg.payload
+            if ("request" in command):
+                self.port.write(json.dumps(msg.payload))
+
+
     def on_publish(prot, address, serviceID, serviceInstanceID, data):
         response, content = http.request( baseUrl+"/address/"+serviceID+"/"+serviceInstanceID, 'POST', json.dumps(data), headers=headers)
 
@@ -69,11 +93,9 @@ class SerialGateway:
     def isReady(self):
         return self.port!=None
 
-    def startParsing(self, messageProcessor):
+    def start(self, messageProcessor):
         while True:
-            message=self.parse(self.port.readline())
-            if (message!=None):
-                messageProcessor.processMessage(message)
+            self.protocol.treatMessage(self.port.readline())
 
 
 
