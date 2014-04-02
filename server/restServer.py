@@ -10,7 +10,6 @@ import logging
 import time
 
 import sensorino
-import serialEngine
 
 
 app = Flask(__name__)
@@ -165,15 +164,6 @@ class PublishDataServiceBySensorino(restful.Resource):
 
 
 
-class SerialThread(threading.Thread):
-    def __init__(self):
-        self._engine = serialEngine.SerialEngine()
-        threading.Thread.__init__(self)
-    def run (self):
-        while True:
-            time.sleep(10)
-
-
 api.add_resource(RestSensorinoList, '/sensorinos')
 api.add_resource(RestSensorino, '/sensorinos/<int:sid>')
 api.add_resource(DataServicesBySensorino, '/sensorinos/<int:sid>/dataServices')
@@ -183,8 +173,7 @@ api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<int:sid>/dataServi
 
 
 if __name__ == '__main__':
-    print("hello, start server")
-   # coreEngine.mqttClient.subscribe("sensorino", 0)
+    print("sensorino server m0.1")
     coreEngine.startMqtt()
     app.config['PROPAGATE_EXCEPTIONS'] = True
 

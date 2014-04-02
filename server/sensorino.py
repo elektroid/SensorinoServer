@@ -5,7 +5,6 @@ import sqlite3
 import mosquitto
 import datetime
 import json
-import serialEngine
 import ConfigParser
 
 # create logger with 'spam_application'
@@ -33,22 +32,11 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
-class MqttThread(threading.Thread):
-    def __init__(self, mqttClient):
-        self._engine = serialEngine.SerialEngine()
-        self._mqttClient=mqttClient
-        threading.Thread.__init__(self)
-        self.daemon = True
-    def run (self):
-        self._mqttClient.connect("127.0.0.1", 1883, 60)
-        self._mqttClient.loop_forever()
-
 class Core:
     def __init__(self):
         self.readConfig()
         self.sensorinos=[]
         self.loadSensorinos()
-        self.serial=None
         self.mqttClient = self._createMqttClient()
 
     def readConfig(self, filename="sensorino.ini"):
@@ -142,12 +130,14 @@ class Core:
 
         return rows
 
+    # TODO generate exception on failures, this will allow rest server to translate them into http status
+
     # the core should read serial port and generate events
-    def onPublish(self, sid, serviceId, data):
+    def publish(self, sid, serviceId, data):
         sens=findSensorino(sid)
         if (sens==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
-            return
+            return 
         service=sens.getService(serviceId)
         if (service==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
@@ -155,23 +145,7 @@ class Core:
         return service.logData(data)
 
     def onSetState(self, sid, serviceId, sensorinoAddress, state):
-        self.serial.write("{"+
-            "'setState':"+
-            "{"+
-            "    'address':'"+sensorinoAddress+"',"+
-            "    'serviceId':'"+serviceId+"',"+
-            "    'serviceType':'x',"+
-            "    'state':'"+state+"'"+
-            "}")
-
-    def startSerial(self):
-        self.serial=SerialEngine()
-        serial.start()
-
-    def startMqtt(self):
-        thread=MqttThread(self.mqttClient)
-        thread.start()
-        return thread
+        self.mqttClient.publish("commands",  { "set" : {"address":sensorinoAddress, "serviceID":}        
 
 
 

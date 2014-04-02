@@ -30,17 +30,6 @@ config=ConfigParser.ConfigParser()
 config.read("sensorino.ini")
 
 
-# we want to receive order events
-mqttc=mosquitto.Mosquitto()
-mqttc.on_message = mqtt_on_message
-mqttc.on_connect = mqtt_on_connect
-mqttc.on_publish = mqtt_on_publish
-mqttc.on_subscribe = mqtt_on_subscribe
-# Uncomment to enable debug messages
-#mqttc.on_log = on_log
-mqttc.connect(self.config.get("Mqtt", "ServerAddress"), 1883, 60)
-mqttc.subscribe("commands", 0)
-
 
 
 
@@ -61,10 +50,29 @@ class SerialGateway:
     windowsPossibleSerialPorts=['\\.\COM1', '\\.\COM2', '\\.\COM3', '\\.\COM4'] # TODO : complete list
 
 
+    def on_mqtt_message(mqtt, obj, msg):
+        logger.debug("msg from mosquitto: "+json.dumps(msg))
+        if("commands" == msg.topic):
+            command=msg.payload
+            if("set" in command):
+                self.port.write(json.dumps(command))
+            elif("control" in command):
+                self.port.write(json.dumps(command))
+            else:
+                logger.warn("unhandled message from mqtt: "+json.dumps(command))
+        else:
+            logger.warn("unknown mqtt channel")
+
+
+
     def __init__(self, port=None):
         self.protocol=protocol.Protocol()
         self.protocol.on_publish=on_publish
         self.mqtt=mqtt
+        # we want to receive order events
+        mqttc=mosquitto.Mosquitto()
+        mqttc.connect(self.config.get("Mqtt", "ServerAddress"), 1883, 60)
+        mqttc.subscribe("commands", 0)
         self.mqtt.on_message=on_mqtt_message
         self.port=port
         if (port==None):
@@ -78,14 +86,6 @@ class SerialGateway:
             self.port = serial.Serial(port, 57600)
 
 
-    def on_mqtt_message(mqtt, obj, msg):
-        logger.debug("msg from mosquitto: "+json.dumps(msg))
-        if ("commands" == msg.topic):
-            command=msg.payload
-            if ("request" in command):
-                self.port.write(json.dumps(msg.payload))
-
-
     def on_publish(prot, address, serviceID, serviceInstanceID, data):
         response, content = http.request( baseUrl+"/address/"+serviceID+"/"+serviceInstanceID, 'POST', json.dumps(data), headers=headers)
 
@@ -97,5 +97,16 @@ class SerialGateway:
         while True:
             self.protocol.treatMessage(self.port.readline())
 
+    def startSerial(self):
+        self.serial=SerialEngine()
+        serial.start()
+
+    def startMqtt(self):
+        thread=MqttThread(self.mqttClient)
+        thread.start()
+        return thread
 
 
+
+if __name__ == '__main__':
+    gateway=SerialGateway()
