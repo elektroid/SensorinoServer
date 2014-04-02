@@ -5,7 +5,7 @@ import sqlite3
 import mosquitto
 import datetime
 import json
-import ConfigParser
+import common
 
 # create logger with 'spam_application'
 logger = logging.getLogger('sensorino_application')
@@ -24,129 +24,6 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
-dbPath="db/example.db"
-
-def dict_factory(cursor, row):
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-class Core:
-    def __init__(self):
-        self.readConfig()
-        self.sensorinos=[]
-        self.loadSensorinos()
-        self.mqttClient = self._createMqttClient()
-
-    def readConfig(self, filename="sensorino.ini"):
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(filename)
-
-
-    def _createMqttClient(self):
-        def mqtt_on_connect(mosq, obj, rc):
-            mqttc.subscribe("sensorino", 0)
-            mqttc.publish("sensorino", "heuu", 0)
-            print("rc: "+str(rc))
-
-        def mqtt_on_message(mosq, obj, msg):
-            print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
-
-        def mqtt_on_publish(mosq, obj, mid):
-            print("mid: "+str(mid))
-
-        def mqtt_on_subscribe(mosq, obj, mid, granted_qos):
-            print("Subscribed: "+str(mid)+" "+str(granted_qos))
-
-        def mqtt_on_log(mosq, obj, level, string):
-            print(string)
-
-        mqttc=mosquitto.Mosquitto()
-        mqttc.on_message = mqtt_on_message
-        mqttc.on_connect = mqtt_on_connect
-        mqttc.on_publish = mqtt_on_publish
-        mqttc.on_subscribe = mqtt_on_subscribe
-        # Uncomment to enable debug messages
-        #mqttc.on_log = on_log
-        mqttc.connect(self.config.get("Mqtt", "ServerAddress"), 1883, 60)
-        
-        return mqttc
-
-
-    def getSensorinos(self):
-        return self.sensorinos
-
-    def loadSensorinos(self):
-        global dbPath
-        conn = sqlite3.connect(dbPath)
-        conn.row_factory = dict_factory
-        c = conn.cursor()
-
-        c.execute("SELECT * from sensorinos")
-        rows = c.fetchall()
-
-        for row in rows:
-            sens=Sensorino( row["name"], row["address"], row["description"], row["owner"], row["location"], row["sid"])
-                     #row["description"], row["owner"], Location(row["location"])))
-            self.addSensorino(sens)
-            servicesRows=self.getServicesBySensorino(sens.sid)
-            for srow in servicesRows:
-                sens.registerService(DataService(srow['name'], srow['dataType'], sens.sid, srow['serviceId']))
-
-    def addSensorino(self, sensorino):
-        if (sensorino in self.sensorinos):
-            logger.debug("not adding sensorino, already present")
-            return None
-        for sens in self.sensorinos:
-            if (sens.sid == sensorino.sid and sens.address==sensorino.address):
-                logger.warn("unable to add your sensorino")
-                return None
-        return self.sensorinos.append(sensorino)
-
-    def delSensorino(self, sid):
-        s = self.findSensorino(sid=sid)
-        if s == None:
-            logger.debug("not deleting sensorino as already missing")
-            return True
-        else:
-            self.sensorinos.remove(s)
-
-    def findSensorino(self, sid=None, address=None):
-        for sens in self.sensorinos:
-            if ((sid!=None and sens.sid == sid) or(address!=None and sens.address==address)):
-                return sens
-        return None
-
-    def getServicesBySensorino(self, sid):
-        global dbPath
-        conn = sqlite3.connect(dbPath)
-        conn.row_factory = dict_factory
-        c = conn.cursor()
-        status=c.execute("SELECT * FROM services WHERE sid=:sid ",   {"sid": sid})
-
-        rows = c.fetchall()
-        conn.commit()
-
-        return rows
-
-    # TODO generate exception on failures, this will allow rest server to translate them into http status
-
-    # the core should read serial port and generate events
-    def publish(self, sid, serviceId, data):
-        sens=findSensorino(sid)
-        if (sens==None):
-            logger.warn("logging data from unknown sensorino is not allowed (yet)")
-            return 
-        service=sens.getService(serviceId)
-        if (service==None):
-            logger.warn("logging data from unknown sensorino is not allowed (yet)")
-            return
-        return service.logData(data)
-
-    def onSetState(self, sid, serviceId, sensorinoAddress, state):
-        self.mqttClient.publish("commands",  { "set" : {"address":sensorinoAddress, "serviceID":}        
-
 
 
 class Sensorino:
@@ -160,6 +37,11 @@ class Sensorino:
         self.location=location
         self._alive=None
 
+    def loadServices(self):
+        for service in Service.getServicesBySensorino(sid=self.sid):
+            self.registerService(service) 
+ 
+
     def registerService(self, service):
         if (self.getService(service.serviceId)==None):
             self.services.append(service)
@@ -170,13 +52,11 @@ class Sensorino:
                 self.remove(service)
                 break
 
-
     def getService(self, serviceId):
         for service in self.services:
             if service.serviceId==serviceId:
                 return service
         return None
-
 
     def toData(self):
         return {
@@ -193,8 +73,7 @@ class Sensorino:
         logger.debug("insert/update sensorino in db")
         status=None
         try:
-            global dbPath
-            conn = sqlite3.connect(dbPath)
+            conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
             status=None
             if (self.sid==None):
@@ -213,8 +92,7 @@ class Sensorino:
     def deleteFromDb(self):
         status=None
         try:
-            global dbPath
-            conn = sqlite3.connect(dbPath)
+            conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
             status=c.execute("DELETE FROM sensorinos WHERE sid=? ",( self.sid))
             conn.commit()
@@ -224,6 +102,27 @@ class Sensorino:
             conn.rollback()
 
         return status
+
+    @staticmethod
+    def loadAllSensorinos(loadServices=False):
+
+        sensorinos=[]
+
+        conn = sqlite3.connect(common.Config.getDbFilename())
+        conn.row_factory = common.dict_factory
+        c = conn.cursor()
+
+        c.execute("SELECT * from sensorinos")
+        rows = c.fetchall()
+
+        for row in rows:
+            sens=Sensorino( row["name"], row["address"], row["description"], row["owner"], row["location"], row["sid"])
+            sensorinos.append(sens)
+            if(loadServices):
+                sens.loadServices()
+
+        return sensorinos
+            
 
 
 
@@ -305,8 +204,7 @@ class Service():
             return None
 
         try:
-            global dbPath
-            conn = sqlite3.connect(dbPath)
+            conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
             status=None
             if (self.serviceId==None):
@@ -330,8 +228,7 @@ class Service():
 
         status=None
         try:
-            global dbPath
-            conn = sqlite3.connect(dbPath)
+            conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
             logger.debug("DELETE service")
             status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1", self.toData())
@@ -351,6 +248,30 @@ class Service():
             'stype' : self.stype
         }
 
+    @staticmethod
+    def getServicesBySensorino(sid):
+        conn = sqlite3.connect(common.Config.getDbFilename())
+        conn.row_factory = common.dict_factory
+        c = conn.cursor()
+        status=c.execute("SELECT * FROM services WHERE sid=:sid ",   {"sid": sid})
+
+        rows = c.fetchall()
+        conn.commit()
+
+        services=[]
+        for srow in rows:
+            service=None
+            if("DATA" == srow["stype"]):
+                service=DataService(srow['name'], srow['dataType'], sens.sid, srow['serviceId'])
+            elif("ACTUATOR" == srow["stype"]):
+                service=ActuatorService(srow['name'], srow['dataType'], sens.sid, srow['serviceId'])
+            if(None==service):
+                logger.error("failed to load service for sensorino :"+srow)
+            else:
+                services.append(service)
+
+        return services
+
 
 
 
@@ -364,8 +285,7 @@ class DataService(Service):
     def logData(self, value):
         status=None
         try:
-            global dbPath
-            conn = sqlite3.connect(dbPath)
+            conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
             logger.debug("Log data on sensorino"+str(self.sid)+" service: "+self.name+" data:"+value)
 
@@ -379,9 +299,8 @@ class DataService(Service):
         return status
 
     def getLogs(self, sid):
-        global dbPath
-        conn = sqlite3.connect(dbPath)
-        conn.row_factory = dict_factory
+        conn = sqlite3.connect(common.Config.getDbFilename())
+        conn.row_factory = common.dict_factory
         c = conn.cursor()
 
         c.execute("SELECT value, timestamp FROM dataServicesLog WHERE serviceId=:serviceId AND sid=:sid", self.toData())

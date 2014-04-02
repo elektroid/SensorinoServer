@@ -8,8 +8,8 @@ from flask.ext.restful.utils import cors
 import threading
 import logging
 import time
+import coreEngine
 
-import sensorino
 
 
 app = Flask(__name__)
@@ -23,7 +23,7 @@ def json_type(data):
         raise ValueError('Malformed JSON')
 
 
-coreEngine = sensorino.Core()
+coreEngine = coreEngine.Core()
 
 
 class RestSensorinoList(restful.Resource):
@@ -174,7 +174,7 @@ api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<int:sid>/dataServi
 
 if __name__ == '__main__':
     print("sensorino server m0.1")
-    coreEngine.startMqtt()
+    coreEngine.start()
     app.config['PROPAGATE_EXCEPTIONS'] = True
 
     app.run(debug=True)

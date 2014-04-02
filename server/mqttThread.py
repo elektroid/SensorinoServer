@@ -1,13 +1,20 @@
 import threading
 import ConfigParser
+import mosquitto
+import common
 
 class MqttThread(threading.Thread):
-    def __init__(self, mqttClient):
-        self._mqttClient=mqttClient
+    """
+        will create a daemon thread with mosquitto.Mosquitto client
+    """
+    def __init__(self):
         threading.Thread.__init__(self)
         self.daemon = True
+        self.mqttc=mosquitto.Mosquitto()
+
     def run (self):
-        self._mqttClient.connect("127.0.0.1", 1883, 60)
-        self._mqttClient.loop_forever()
+        # TODO add a mecanism to handle reconnection
+        self.mqttc.connect(common.Config.getMqttServer(), 1883, 60)
+        self.mqttc.loop_forever()
 
 
