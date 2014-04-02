@@ -2,7 +2,10 @@ import ConfigParser
 
 
 class Config:
-
+    """
+        This is some kind of wrapper around ConfigParser that handles default and autoloading
+        It's shared accross all projects
+    """
     config=None
     filename="sensorino.ini"
 

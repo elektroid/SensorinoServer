@@ -34,14 +34,17 @@ class Core:
 
 
     def getSensorinos(self):
+        """return all the sensorinos that are registered"""
         return self.sensorinos
 
     def loadSensorinos(self):
+        """load all sensorinos stored in db """
         for senso in sensorino.Sensorino.loadAllSensorinos():
             self.addSensorino(senso)
         
 
     def addSensorino(self, sensorino):
+        """create and add a new sensorino unless there is an id/address conflict """
         if (sensorino in self.sensorinos):
             logger.debug("not adding sensorino, already present")
             return None
@@ -53,6 +56,7 @@ class Core:
         return True
 
     def delSensorino(self, sid):
+        """delete and remove a new sensorino"""
         s = self.findSensorino(sid=sid)
         if s == None:
             logger.debug("not deleting sensorino as already missing")
@@ -63,12 +67,14 @@ class Core:
             return True
 
     def findSensorino(self, sid=None, address=None):
+        """return sensorino with given address or id"""
         for sens in self.sensorinos:
             if ((sid!=None and sens.sid == sid) or(address!=None and sens.address==address)):
                 return sens
         return None
 
     def getServicesBySensorino(self, sid):
+        """return all services registered in sensorino with given id"""
         s = self.findSensorino(sid=sid)
         if s == None:
             logger.debug("not returning services as unable to find sensorino")
@@ -78,22 +84,50 @@ class Core:
         
     # TODO generate exception on failures, this will allow rest server to translate them into http status
 
-    # the core should read serial port and generate events
+    
     def publish(self, sid, serviceId, data):
+        """publish some data on dataService with given id"""
         sens=findSensorino(sid)
         if (sens==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
-            return 
+            return None
         service=sens.getService(serviceId)
         if (service==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
-            return
+            return None
         return service.logData(data)
 
-    def onSetState(self, sid, serviceId, sensorinoAddress, state):
-        self.mqttClient.publish("commands",  { "set" : {"address":sensorinoAddress, "serviceID":serviceId, "state":state}})
+    def setState(self, sid, serviceId, state):
+        """to setState we should send command and wait for the publish back"""
+        sens=findSensorino(sid)
+        if (sens==None):
+            logger.warn("logging data from unknown sensorino is not allowed (yet)")
+            return None
+        service=sens.getService(serviceId)
+        if (service==None):
+            logger.warn("logging data from unknown sensorino is not allowed (yet)")
+            return None
+        
+        self.mqtt.mqttc.publish("commands",  { "set" : {"address":sensorinoAddress, "serviceID":serviceId, "state":state}})
+        return True
+
+    
+    def request(self, sid, serviceId):
+        """will launch a request to service"""
+        sens=findSensorino(sid)
+        if (sens==None):
+            logger.warn("logging data from unknown sensorino is not allowed (yet)")
+            return None
+        service=sens.getService(serviceId)
+        if (service==None):
+            logger.warn("logging data from unknown sensorino is not allowed (yet)")
+            return None
+        self.mqtt.mqttc.publish("commands",  { "request": { "address":sens.address, "serviceID":service.serviceId, "serviceInstanceID":service.sid}})
+        return True
+
 
     def _createMqttClient(self):
+        """confire mqtt client and create thread for it"""
         def mqtt_on_connect(mosq, obj, rc):
             mosq.subscribe("sensorino", 0)
             print("rc: "+str(rc))

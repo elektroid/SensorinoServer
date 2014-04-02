@@ -15,19 +15,11 @@ import coreEngine
 app = Flask(__name__)
 api = restful.Api(app)
 
-
-def json_type(data):
-    try:
-        return json.loads(data)
-    except:
-        raise ValueError('Malformed JSON')
-
-
 coreEngine = coreEngine.Core()
 
 
 class RestSensorinoList(restful.Resource):
-
+    """ Handle sensorinos list and creation"""
     def get(self):
         sensorinos=[]
         for s in coreEngine.getSensorinos():
@@ -42,11 +34,13 @@ class RestSensorinoList(restful.Resource):
         args = rparse.parse_args()
         sens=sensorino.Sensorino( args['name'], args['address'], args['description'])
         sens.saveToDb()
-        coreEngine.addSensorino(sens)
+        if (coreEngine.addSensorino(sens)==False):
+            return 500
         return sens.sid
 
-class RestSensorino(restful.Resource):
 
+class RestSensorino(restful.Resource):
+    """ Handle sensorino details, update and delete"""
     def get(self, sid):
         sens=coreEngine.findSensorino(sid)
         if (sens==None):
@@ -74,9 +68,8 @@ class RestSensorino(restful.Resource):
 
 
 
-
-class DataServicesBySensorino(restful.Resource):
-
+class ServicesBySensorino(restful.Resource):
+    """ List and create services inside a sensorino"""
     def get(self, sid):
         services=[]
         for service in coreEngine.getServicesBySensorino(sid):
@@ -94,14 +87,15 @@ class DataServicesBySensorino(restful.Resource):
         if (sens==None):
             abort(404, message="no such sensorino")
         service=sensorino.DataService(args['name'], args['dataType'], sens.sid)
+        #TODO: who should handle db call ?
         status=service.saveToDb()
         sens.registerService(service)
         return service.serviceId, 201
 
 
 
-class DataServiceBySensorino(restful.Resource):
-
+class ServiceBySensorino(restful.Resource):
+    """ Handle service details, update and delete"""
     def get(self, sid, serviceId):
         sensorinoId=sid
         sens=coreEngine.findSensorino(sid=sid)
@@ -123,14 +117,15 @@ class DataServiceBySensorino(restful.Resource):
         service=sens.getService(serviceId)
         if (service==None):
             abort(404, message="no such service")
-
+        #TODO: who should handle db call ?
         sens.removeService(service)
         service.deleteFromDb()
 
         return service.serviceId
 
-class PublishDataServiceBySensorino(restful.Resource):
 
+class PublishDataServiceBySensorino(restful.Resource):
+    """ Handle publish data listing and posting"""
     def get(self, sid, serviceId):
         sensorinoId=int(sid)
         sens=coreEngine.findSensorino(sid=sensorinoId)
@@ -139,7 +134,6 @@ class PublishDataServiceBySensorino(restful.Resource):
         service=sens.getService(serviceId)
         if (service==None):
             abort(404, message="no such service")
-        
         return service.getLogs(sid)
 
 
@@ -160,14 +154,10 @@ class PublishDataServiceBySensorino(restful.Resource):
       
 
 
- 
-
-
-
 api.add_resource(RestSensorinoList, '/sensorinos')
 api.add_resource(RestSensorino, '/sensorinos/<int:sid>')
-api.add_resource(DataServicesBySensorino, '/sensorinos/<int:sid>/dataServices')
-api.add_resource(DataServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>')
+api.add_resource(ServicesBySensorino, '/sensorinos/<int:sid>/dataServices')
+api.add_resource(ServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>')
 api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>/data')
 
 

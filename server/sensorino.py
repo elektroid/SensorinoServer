@@ -75,7 +75,6 @@ class Sensorino:
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
-            status=None
             if (self.sid==None):
                 logger.debug("insert")
                 status=c.execute("INSERT INTO sensorinos ( name, address, description, owner, location) VALUES (?,?,?,?,?) ",(  self.name, self.address, self.description, self.owner, self.location))
@@ -318,5 +317,18 @@ class ActuatorService(Service):
         self.stype="ACTUATOR"
 
     def setState(self, state):
-        self.state=state
+        status=None
+        try:
+            conn = sqlite3.connect(common.Config.getDbFilename())
+            c = conn.cursor()
+            status=c.execute("UPDATE sensorinos SET name=:name, address=:address, description=:description, owner=:owner, location=:location WHERE sid=:sid", self.toData())
+            conn.commit()
+            self.state=state
+        except Exception as e:
+            print(e)
+            # Roll back any change if something goes wrong
+            conn.rollback()
+        return status
+
+ 
 
