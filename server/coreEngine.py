@@ -78,8 +78,36 @@ class Core:
         s = self.findSensorino(sid=sid)
         if s == None:
             logger.debug("not returning services as unable to find sensorino")
-            return True
+            return None
         return s.services 
+
+    def createDataService(self, sid, name, dataType ):
+        s = self.findSensorino(sid=sid)
+        if s == None:
+            logger.debug("not able to create service as unable to find sensorino with id "+sid)
+            return None
+        service=sensorino.DataService(name, dataType, s.sid)
+        if (False==s.registerService(service)):
+            return False
+        status=service.save()
+        return True
+
+    def deleteService(self, sid, serviceId):
+        s = self.findSensorino(sid=sid)
+        if s == None:
+            logger.debug("not able to delete services as unable to find sensorino")
+            return True
+        service = s.getService(serviceId)
+        if service == None:
+            logger.debug("not deleting service as already missing")
+            return True
+        else:
+            s.removeService(service)
+            service.delete()
+            return True
+
+
+    
 
         
     # TODO generate exception on failures, this will allow rest server to translate them into http status

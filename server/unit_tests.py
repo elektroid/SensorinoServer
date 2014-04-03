@@ -5,6 +5,7 @@ import unittest
 import common
 import coreEngine
 import sensorino
+import database
 
 class TestX(unittest.TestCase):
 
@@ -28,6 +29,10 @@ class TestX(unittest.TestCase):
     def setUp(self):
         common.Config.setConfigFile("sensorino_unittests.ini")
         self.engine=coreEngine.Core()
+        database.DbCreator.createEmpty(common.Config.getDbFilename())
+
+    def tearDown(self):
+        pass
 
     def test_sensorino_creation_deletion(self):
         self.assertTrue(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234")))
@@ -37,12 +42,22 @@ class TestX(unittest.TestCase):
         self.assertTrue(self.engine.delSensorino(sens.sid))
 
     def test_findMissingSensorino(self):
-        self.assertIsNone(self.engine.findSensorino(address="666")
-        self.assertIsNone(self.engine.findSensorino(sid="666")
+        self.assertIsNone(self.engine.findSensorino(address="666"))
+        self.assertIsNone(self.engine.findSensorino(sid="666"))
 
-#    def test_createService(self):
+    def test_createService(self):
+        self.assertTrue(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234", sid="5678")))
+        sens=self.engine.findSensorino(address="1234")
+        self.assertTrue(self.engine.createDataService(sens.sid, "testService", "Foo"))
+        services=self.engine.getServicesBySensorino(sens.sid)
+        for service in services: 
+            if "testService" == service.name:
+                self.assertTrue(self.engine.deleteService(sens.sid, service.serviceId))
+                break 
         
         
 
 if __name__ == '__main__':
-    unittest.main()
+
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestX)
+    unittest.TextTestRunner(verbosity=2).run(suite)

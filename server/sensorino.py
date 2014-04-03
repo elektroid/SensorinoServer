@@ -45,6 +45,9 @@ class Sensorino:
     def registerService(self, service):
         if (self.getService(service.serviceId)==None):
             self.services.append(service)
+            return True
+        else:
+            return False
 
     def removeService(self, serviceId):
         for service in self.services:
@@ -69,7 +72,7 @@ class Sensorino:
             'location': self.location
         }
 
-    def saveToDb(self):
+    def save(self):
         logger.debug("insert/update sensorino in db")
         status=None
         try:
@@ -88,7 +91,7 @@ class Sensorino:
             conn.rollback()
         return status
 
-    def deleteFromDb(self):
+    def delete(self):
         status=None
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
@@ -193,11 +196,7 @@ class Service():
     def setSensorino(self, s):
         self.sid=s.sid
 
-    def persist(self):
-        if (self.sid==None):
-            raise(Exception("Can't persist orphan service"))
-
-    def saveToDb(self):
+    def save(self):
         if (self.sid==None):
             logger.critical("unable to save service without sensorino")
             return None
@@ -223,8 +222,7 @@ class Service():
 
         return status
 
-    def deleteFromDb(self):
-
+    def delete(self):
         status=None
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
@@ -246,6 +244,7 @@ class Service():
             'dataType' : self.dataType,
             'stype' : self.stype
         }
+
 
     @staticmethod
     def getServicesBySensorino(sid):
