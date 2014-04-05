@@ -6,6 +6,7 @@ import ConfigParser
 import sensorino
 import common
 import mqttThread
+from errors import *
 
 # create logger with 'spam_application'
 logger = logging.getLogger('sensorino_coreEngine')
@@ -71,7 +72,7 @@ class Core:
         for sens in self.sensorinos:
             if ((sid!=None and sens.sid == sid) or(address!=None and sens.address==address)):
                 return sens
-        return None
+        raise SensorinoNotFoundError("missing")
 
     def getServicesBySensorino(self, sid):
         """return all services registered in sensorino with given id"""
@@ -107,21 +108,20 @@ class Core:
             return True
 
 
-    
-
         
     # TODO generate exception on failures, this will allow rest server to translate them into http status
-
     
     def publish(self, sid, serviceId, data):
         """publish some data on dataService with given id"""
         sens=findSensorino(sid)
         if (sens==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
+            self.mqtt.mqttc.publish("discover", { "sensorino": {"sid": sid, "address": None}})
             return None
         service=sens.getService(serviceId)
         if (service==None):
-            logger.warn("logging data from unknown sensorino is not allowed (yet)")
+            logger.warn("logging data from unknown service is not allowed")
+            self.mqtt.mqttc.publish("discover", { "service": {"sid": sid, "address": None, "serviceId":serviceId}})
             return None
         return service.logData(data)
 

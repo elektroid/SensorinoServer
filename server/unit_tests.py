@@ -6,6 +6,7 @@ import common
 import coreEngine
 import sensorino
 import database
+from errors import *
 
 class TestX(unittest.TestCase):
 
@@ -42,8 +43,10 @@ class TestX(unittest.TestCase):
         self.assertTrue(self.engine.delSensorino(sens.sid))
 
     def test_findMissingSensorino(self):
-        self.assertIsNone(self.engine.findSensorino(address="666"))
-        self.assertIsNone(self.engine.findSensorino(sid="666"))
+        with self.assertRaises(SensorinoNotFoundError) as err:
+            self.engine.findSensorino( address="666")
+        with self.assertRaises(SensorinoNotFoundError) as err:
+            self.engine.findSensorino( sid="666")
 
     def test_createService(self):
         self.assertTrue(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234", sid="5678")))
