@@ -29,8 +29,9 @@ class TestX(unittest.TestCase):
 
     def setUp(self):
         common.Config.setConfigFile("sensorino_unittests.ini")
-        self.engine=coreEngine.Core()
         database.DbCreator.createEmpty(common.Config.getDbFilename())
+        self.engine=coreEngine.Core()
+        self.engine.start()
 
     def tearDown(self):
         pass
@@ -57,8 +58,11 @@ class TestX(unittest.TestCase):
             if "testService" == service.name:
                 self.assertTrue(self.engine.deleteService(sens.sid, service.serviceId))
                 break 
-        
-        
+        # now, publish
+        with self.assertRaises(ServiceNotFoundError) as err:
+            self.engine.publish(sens.sid, 666, "789")
+        self.assertTrue(self.engine.publish(sens.sid, service.serviceId, "789"))
+          
 
 if __name__ == '__main__':
 

@@ -7,4 +7,8 @@ class SensorinoNotFoundError(Error):
     def __init__(self, message):
         self.message = message
 
+class ServiceNotFoundError(Error):
+    def __init__(self, message):
+        self.message = message
+
 

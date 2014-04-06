@@ -10,7 +10,9 @@ class DbCreator:
         if None == filename:
             filename=common.Config.getDbFilename()                
 
+        print "create db in file :"+filename
         conn = sqlite3.connect(filename)
+        print conn
 
         c = conn.cursor()
 

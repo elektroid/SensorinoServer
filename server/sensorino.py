@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usv/bin/python3
 import logging
 import threading
 import sqlite3
@@ -6,6 +6,7 @@ import mosquitto
 import datetime
 import json
 import common
+from errors import *
 
 # create logger with 'spam_application'
 logger = logging.getLogger('sensorino_application')
@@ -43,11 +44,12 @@ class Sensorino:
  
 
     def registerService(self, service):
-        if (self.getService(service.serviceId)==None):
+        try:
+            self.getService(service.serviceId)
+        except ServiceNotFoundError:
             self.services.append(service)
             return True
-        else:
-            return False
+        return False
 
     def removeService(self, serviceId):
         for service in self.services:
@@ -59,7 +61,7 @@ class Sensorino:
         for service in self.services:
             if service.serviceId==serviceId:
                 return service
-        return None
+        raise ServiceNotFoundError("service not found/registered")
 
     def toData(self):
         return {
