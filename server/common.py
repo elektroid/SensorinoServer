@@ -31,7 +31,12 @@ class Config:
             Config.load()
         return Config.config.get("Mqtt", "ServerAddress")
        
-       
+    @staticmethod
+    def getRestServer():
+        if (Config.config==None):
+            Config.load()
+        return Config.config.get("RestServer", "ServerAddress")
+      
 
 def dict_factory(cursor, row):
     d = {}

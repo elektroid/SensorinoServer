@@ -1,6 +1,7 @@
 import logging
 import serial
 import json
+import traceback
 
 # create logger with 'spam_application'
 logger = logging.getLogger('protocol')
@@ -62,32 +63,44 @@ class Protocol:
             if("publish" in message):
                 msg=message["publish"]
                 if(self.on_publish!=None):
-                    self.on_publish( SensorinoProtocol.serializeAddress(msg["address"]), msg["serviceId"], msg['serviceInstanceID'], msg["data"])
+                    print("treat "+json.dumps(msg))
+                    self.on_publish( Protocol.serializeAddress(msg["address"]), msg["serviceID"], msg['serviceInstanceID'], msg["data"])
+                    return True
             elif("set" in message):
                 msg=message["set"]
                 if(self.on_set!=None):
-                    self.on_set(SensorinoProtocol.serializeAddress(msg["address"]), msg["serviceId"], msg['serviceInstanceID'], msg["state"])
+                    self.on_set(Protocol.serializeAddress(msg["address"]), msg["serviceID"], msg['serviceInstanceID'], msg["state"])
+                    return True
             elif("request" in message):
                 msg=message["request"]
                 if(self.on_request!=None):
-                    self.on_request(SensorinoProtocol.serializeAddress(msg["address"]), msg["serviceId"], msg['serviceInstanceID'])
+                    self.on_request(Protocol.serializeAddress(msg["address"]), msg["serviceID"], msg['serviceInstanceID'])
+                    return True
             elif ("control" in message):
                 msg=message["control"]
                 if ("type" in msg):
                     if("PONG" == msg["type"] and self.on_pong!=None):
-                        self.on_pong(SensorinoProtocol.serializeAddress(msg["address"]))
+                        self.on_pong(Protocol.serializeAddress(msg["address"]))
+                        return True
                     elif("PING" == msg["type"] and self.on_ping!=None):
-                        self.on_ping(SensorinoProtocol.serializeAddress(msg["address"]))
-
+                        self.on_ping(Protocol.serializeAddress(msg["address"]))
+                        return True
             elif ("error" in message):
                 msg=message["error"]
                 if (self.on_error!=None):
-                    self.on_error(SensorinoProtocol.serializeAddress(msg["address"]), msg["type"], msg["data"])
+                    self.on_error(Protocol.serializeAddress(msg["address"]), msg["type"], msg["data"])
+                    return True
             else:
                 logger.error("unhandled message "+message)
+                return False
                     
-        except:
-            logger.error("fail to parse json message: "+line)
-            return None
+        except Exception, e:
+              
+            logger.error("fail to treat json message "+jsonString)
+            logger.error(e)
+
+            print repr(traceback.format_stack())
+
+            return False
 
 
