@@ -51,48 +51,49 @@ class Core:
             logger.debug("not adding sensorino, already present")
             return None
         for sens in self.sensorinos:
-            if (sens.sid == sensorino.sid or sens.address == sensorino.address):
+            if ( sens.address == sensorino.address):
                 logger.warn("unable to add your sensorino, id or address duplication")
                 return None
         self.sensorinos.append(sensorino)
         return True
 
-    def delSensorino(self, sid):
+    def delSensorino(self, saddress):
         """delete and remove a new sensorino"""
+        s=None
         try:
-            self.findSensorino(sid=sid)
+            s=self.findSensorino(saddress=saddress)
         except SensorinoNotFoundError:
             logger.debug("not deleting sensorino as already missing")
             return True
-        s.deleteFromDb()
+        s.delete()
         self.sensorinos.remove(s)
         return True
 
-    def findSensorino(self, sid=None, address=None):
+    def findSensorino(self, saddress=None):
         """return sensorino with given address or id"""
         for sens in self.sensorinos:
-            if ((sid!=None and sens.sid == sid) or (address!=None and sens.address==address)):
+            if (saddress!=None and sens.address==saddress):
                 return sens
         raise SensorinoNotFoundError("missing")
 
-    def getServicesBySensorino(self, sid):
+    def getServicesBySensorino(self, saddress):
         """return all services registered in sensorino with given id"""
-        s = self.findSensorino(sid=sid)
+        s = self.findSensorino(saddress=saddress)
         if s == None:
             logger.debug("not returning services as unable to find sensorino")
             return None
         return s.services 
 
-    def createDataService(self, sid, name, dataType ):
-        s = self.findSensorino(sid=sid)
-        service=sensorino.DataService(name, dataType, s.sid)
+    def createDataService(self, saddress, name, dataType ):
+        s = self.findSensorino(saddress=saddress)
+        service=sensorino.DataService(name, dataType, s.address)
         if (False==s.registerService(service)):
             return False
         status=service.save()
         return True
 
-    def deleteService(self, sid, serviceId):
-        s = self.findSensorino(sid=sid)
+    def deleteService(self, saddress, serviceId):
+        s = self.findSensorino(saddress=saddress)
         service = s.getService(serviceId)
         if service == None:
             logger.debug("not deleting service as already missing")
@@ -106,28 +107,28 @@ class Core:
         
     # TODO generate exception on failures, this will allow rest server to translate them into http status
     
-    def publish(self, sid, serviceId, data):
+    def publish(self, saddress, serviceId, data):
         """publish some data on dataService with given id"""
         sens = None
         try:
-            sens=self.findSensorino(sid)
+            sens=self.findSensorino(saddress=saddress)
         except SensorinoNotFoundError:
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
-            self.mqtt.mqttc.publish("discover", { "sensorino": {"sid": sid, "address": None}})
+            self.mqtt.mqttc.publish("discover", json.dumps({ "sensorino": {"saddress": saddress, "address": None}}))
             return False
         service=None
         try:
             service=sens.getService(serviceId)
         except ServiceNotFoundError:
             logger.warn("logging data from unknown service is not allowed")
-            payload=  { "service": {"sid": sid, "address": None, "serviceId":serviceId}}
-            self.mqtt.mqttc.publish("discover", json.dumps(payload) )
+            payload=  { "service": {"saddress": saddress, "serviceId":serviceId}}
+            logger.warn(self.mqtt.mqttc.publish("discover", json.dumps(payload) ))
             raise ServiceNotFoundError("unable to publish on unknown service, mqttt clients will receive some notice")
         return service.logData(data)
 
-    def setState(self, sid, serviceId, state):
+    def setState(self, saddress, serviceId, state):
         """to setState we should send command and wait for the publish back"""
-        sens=self.findSensorino(sid)
+        sens=self.findSensorino(saddress=saddress)
         if (sens==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
             return None
@@ -136,13 +137,13 @@ class Core:
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
             return None
         
-        self.mqtt.mqttc.publish("commands",  { "set" : {"address":sensorinoAddress, "serviceID":serviceId, "state":state}})
+        self.mqtt.mqttc.publish("commands",  { "set" : {"saddress":sadress, "serviceID":serviceId, "state":state}})
         return True
 
     
-    def request(self, sid, serviceId):
+    def request(self, saddress, serviceId):
         """will launch a request to service"""
-        sens=self.findSensorino(sid)
+        sens=self.findSensorino(saddress=saddress)
         if (sens==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
             return None
@@ -150,7 +151,7 @@ class Core:
         if (service==None):
             logger.warn("logging data from unknown sensorino is not allowed (yet)")
             return None
-        self.mqtt.mqttc.publish("commands",  { "request": { "address":sens.address, "serviceID":service.serviceId, "serviceInstanceID":service.sid}})
+        self.mqtt.mqttc.publish("commands",  json.dumps({ "request": { "saddress":sens.address, "serviceID":service.serviceId, "serviceInstanceID":service.sid}}))
         return True
 
 

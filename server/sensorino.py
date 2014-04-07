@@ -28,8 +28,7 @@ logger.addHandler(ch)
 
 
 class Sensorino:
-    def __init__(self, name, address, description="yet another node", owner="default", location="unknown", sid=None):
-        self.sid=sid
+    def __init__(self, name, address, description="yet another node", owner="default", location="unknown"):
         self.name=name
         self.address=address
         self.description=description
@@ -39,7 +38,7 @@ class Sensorino:
         self._alive=None
 
     def loadServices(self):
-        for service in Service.getServicesBySensorino(sid=self.sid):
+        for service in Service.getServicesBySensorino(address=self.address):
             self.registerService(service) 
  
 
@@ -66,8 +65,6 @@ class Sensorino:
     def toData(self):
         return {
             'name': self.name,
-            'sid': self.sid,
-            'name': self.name,
             'address': self.address,
             'description': self.description,
             'owner': self.owner,
@@ -80,12 +77,7 @@ class Sensorino:
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
-            if (self.sid==None):
-                logger.debug("insert")
-                status=c.execute("INSERT INTO sensorinos ( name, address, description, owner, location) VALUES (?,?,?,?,?) ",(  self.name, self.address, self.description, self.owner, self.location))
-                self.sid=c.lastrowid
-            else:
-                status=c.execute("UPDATE sensorinos SET name=:name, address=:address, description=:description, owner=:owner, location=:location WHERE sid=:sid", self.toData())
+            status=c.execute("INSERT OR REPLACE INTO sensorinos SET name=:name, description=:description, owner=:owner, location=:location WHERE adressd=:address", self.toData())
             conn.commit()
         except Exception as e:
             print(e)
@@ -98,7 +90,7 @@ class Sensorino:
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
-            status=c.execute("DELETE FROM sensorinos WHERE sid=? ",( self.sid))
+            status=c.execute("DELETE FROM sensorinos WHERE address=? ",( self.address))
             conn.commit()
         except Exception as e:
             print(e)
@@ -120,7 +112,7 @@ class Sensorino:
         rows = c.fetchall()
 
         for row in rows:
-            sens=Sensorino( row["name"], row["address"], row["description"], row["owner"], row["location"], row["sid"])
+            sens=Sensorino( row["name"], row["address"], row["description"], row["owner"], row["location"])
             sensorinos.append(sens)
             if(loadServices):
                 sens.loadServices()
@@ -192,14 +184,14 @@ class Service():
     def __init__(self, name, serviceId):
         self.name=name
         self.serviceId=serviceId
-        self.sid=None
+        self.saddress=None
         self.stype=None
 
     def setSensorino(self, s):
-        self.sid=s.sid
+        self.saddress=s.address
 
     def save(self):
-        if (self.sid==None):
+        if (self.saddress==None):
             logger.critical("unable to save service without sensorino")
             return None
 
@@ -209,12 +201,12 @@ class Service():
             status=None
             if (self.serviceId==None):
                 logger.debug("INSERT service")
-                status=c.execute("INSERT INTO services ( name, stype, dataType, sid)  VALUES (?,?,?,?)",
-                    ( self.name, self.stype, self.dataType, self.sid))
+                status=c.execute("INSERT INTO services ( name, stype, dataType, saddress)  VALUES (?,?,?,?)",
+                    ( self.name, self.stype, self.dataType, self.saddress))
                 self.serviceId=c.lastrowid
             else:
                 logger.debug("UPDATE service")
-                status=c.execute("UPDATE services SET stype=:stype WHERE sid=:sid AND serviceId=:serviceId LIMIT 1",
+                status=c.execute("UPDATE services SET stype=:stype WHERE saddress=:saddress AND serviceId=:serviceId LIMIT 1",
                      self.toData())
             conn.commit()
         except Exception as e:
@@ -230,7 +222,7 @@ class Service():
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
             logger.debug("DELETE service")
-            status=c.execute("DELETE FROM services WHERE sid=:sid AND serviceId=:serviceId LIMIT 1", self.toData())
+            status=c.execute("DELETE FROM services WHERE saddress=:saddress AND serviceId=:serviceId LIMIT 1", self.toData())
             conn.commit()
         except Exception as e:
             print(e)
@@ -242,18 +234,18 @@ class Service():
         return {
             'name': self.name,
             'serviceId' : self.serviceId,
-            'sid': self.sid,
+            'saddress': self.saddress,
             'dataType' : self.dataType,
             'stype' : self.stype
         }
 
 
     @staticmethod
-    def getServicesBySensorino(sid):
+    def getServicesBySensorino(saddress):
         conn = sqlite3.connect(common.Config.getDbFilename())
         conn.row_factory = common.dict_factory
         c = conn.cursor()
-        status=c.execute("SELECT * FROM services WHERE sid=:sid ",   {"sid": sid})
+        status=c.execute("SELECT * FROM services WHERE saddress=:saddress ",   {"saddress": saddress})
 
         rows = c.fetchall()
         conn.commit()
@@ -276,10 +268,10 @@ class Service():
 
 
 class DataService(Service):
-    def __init__(self, name, dataType, sid, serviceId=None):
+    def __init__(self, name, dataType, saddress, serviceId=None):
         Service.__init__( self, name, serviceId)
         self.dataType=dataType
-        self.sid=sid
+        self.saddress=saddress
         self.stype="DATA"
 
     def logData(self, value):
@@ -287,10 +279,10 @@ class DataService(Service):
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
-            logger.debug("Log data on sensorino"+str(self.sid)+" service: "+self.name+" data:"+value)
+            logger.debug("Log data on sensorino"+str(self.saddress)+" service: "+self.name+" data:"+value)
 
-            status=c.execute("INSERT INTO dataServicesLog (sid, serviceId, value, timestamp) VALUES (?,?,?,?) ",
-                     (str(self.sid), self.serviceId, value, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            status=c.execute("INSERT INTO dataServicesLog (saddress, serviceId, value, timestamp) VALUES (?,?,?,?) ",
+                     (self.saddress, self.serviceId, value, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
         except Exception as e:
             print(e)
@@ -303,7 +295,7 @@ class DataService(Service):
         conn.row_factory = common.dict_factory
         c = conn.cursor()
 
-        c.execute("SELECT value, timestamp FROM dataServicesLog WHERE serviceId=:serviceId AND sid=:sid", self.toData())
+        c.execute("SELECT value, timestamp FROM dataServicesLog WHERE serviceId=:serviceId AND saddress=:saddress", self.toData())
         rows = c.fetchall()
         return rows
 
@@ -311,10 +303,10 @@ class DataService(Service):
 
 class ActuatorService(Service):
 
-    def __init__(self, name, dataType, sid, serviceId=None):
+    def __init__(self, name, dataType, saddress, serviceId=None):
         Service.__init__( self, name, serviceId)
         self.dataType=dataType
-        self.sid=sid
+        self.saddress=saddress
         self.stype="ACTUATOR"
 
     def setState(self, state):
@@ -322,7 +314,7 @@ class ActuatorService(Service):
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
-            status=c.execute("UPDATE sensorinos SET name=:name, address=:address, description=:description, owner=:owner, location=:location WHERE sid=:sid", self.toData())
+            status=c.execute("UPDATE sensorinos SET name=:name, address=:address, description=:description, owner=:owner, location=:location WHERE saddress=:saddress", self.toData())
             conn.commit()
             self.state=state
         except Exception as e:

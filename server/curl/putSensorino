@@ -1,2 +1,2 @@
-curl -X PUT -H "Content-Type: application/json" -d '{"address":"11211", "name":"myFirstSensorino", "description":"a cool one, yes"}' http://127.0.0.1:5001/sensorino/1
+curl -X PUT -H "Content-Type: application/json" -d '{"address":"11211", "name":"myFirstSensorino", "description":"a cool one, yes"}' http://127.0.0.1/sensorino/1
 

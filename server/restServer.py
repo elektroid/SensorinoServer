@@ -9,6 +9,8 @@ import threading
 import logging
 import time
 import coreEngine
+import sensorino
+from errors import *
 
 
 
@@ -28,40 +30,37 @@ class RestSensorinoList(restful.Resource):
 
     def post(self):
         rparse = reqparse.RequestParser()   
-        rparse.add_argument('address', type=str, required=True, help="your sensorino needs an address", location="json")
         rparse.add_argument('name', type=str, required=True, help="your sensorino needs a name", location="json")
         rparse.add_argument('description', type=str, required=True, help="Please give a brief description for your sensorin", location="json")
         args = rparse.parse_args()
-        sens=sensorino.Sensorino( args['name'], args['address'], args['description'])
-        sens.saveToDb()
+        sens=sensorino.Sensorino( args['name'],  args['description'])
+        sens.save()
         if (coreEngine.addSensorino(sens)==False):
             return 500
-        return sens.sid
+        return sens.address
 
 
 class RestSensorino(restful.Resource):
     """ Handle sensorino details, update and delete"""
-    def get(self, sid):
+    def get(self, address):
         try:
-            sens=coreEngine.findSensorino(sid)
+            sens=coreEngine.findSensorino(saddress=address)
             return sens.toData()
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
 
     def put(self, sid):
         rparse = reqparse.RequestParser()   
-        rparse.add_argument('address', type=str, required=True, help="your sensorino needs an address", location="json")
         rparse.add_argument('name', type=str, required=True, help="your sensorino needs a name", location="json")
         rparse.add_argument('description', type=str, required=True, help="Please give a brief description for your sensorin", location="json")
 
         args = rparse.parse_args()
         try:
-            sens=coreEngine.findSensorino(sid)
+            sens=coreEngine.findSensorino(saddress=address)
             sens.name=args['name']
-            sens.address=args['address']
             sens.description=args['description']
 
-            sens.saveToDb()
+            sens.save()
             return sens.toData()
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
@@ -74,9 +73,9 @@ class RestSensorino(restful.Resource):
 
 class ServicesBySensorino(restful.Resource):
     """ List and create services inside a sensorino"""
-    def get(self, sid):
+    def get(self, address):
         services=[]
-        for service in coreEngine.getServicesBySensorino(sid):
+        for service in coreEngine.getServicesBySensorino(saddress=address):
             services.append(service)
         return services
 
@@ -88,7 +87,7 @@ class ServicesBySensorino(restful.Resource):
         args =rparse.parse_args()
         
         try:
-            coreEngine.createDataService(sid, args['name'], args['dataType'])
+            coreEngine.createDataService(sid, address, args['name'], args['dataType'])
             return 201
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
@@ -97,18 +96,17 @@ class ServicesBySensorino(restful.Resource):
 
 class ServiceBySensorino(restful.Resource):
     """ Handle service details, update and delete"""
-    def get(self, sid, serviceId):
-        sensorinoId=sid
+    def get(self, address, serviceId):
         try:
-            return coreEngine.findSensorino(sid=sid).getService(serviceId).toData()
+            return coreEngine.findSensorino(saddress=address).getService(serviceId).toData()
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
         except ServiceNotFoundError:
             abort(404, message="no such service")
 
-    def delete(self, sid, serviceId):
+    def delete(self, address, serviceId):
         try:
-            coreEngine.findSensorino(sid, serviceId)
+            coreEngine.deleteService(address, serviceId)
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
 
@@ -116,23 +114,22 @@ class ServiceBySensorino(restful.Resource):
 
 class PublishDataServiceBySensorino(restful.Resource):
     """ Handle publish data listing and posting"""
-    def get(self, sid, serviceId):
+    def get(self, address, serviceId):
         try:
-            sensorinoId=int(sid)
-            return coreEngine.findSensorino(sid=sensorinoId).getService(serviceId).getLogs(sid)
+            sensorinoId=int(address)
+            return coreEngine.findSensorino(saddress=address).getService(serviceId).getLogs()
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
         except ServiceNotFoundError:
             abort(404, message="no such service")
 
 
-    def post(self, sid, serviceId):
+    def post(self, address, serviceId):
         rparse = reqparse.RequestParser()
         rparse.add_argument('data', type=str, required=True, help="are you loging data ?", location="json")
         args =rparse.parse_args()
         try: 
-            sensorinoId=int(sid)
-            coreEngine.findSensorino(sid=sensorinoId).getService(serviceId).logData(args['data'])
+            coreEngine.publish(address, serviceId, args['data'])
         except SensorinoNotFoundError:
             abort(404, message="no such sensorino")
         except ServiceNotFoundError:
@@ -142,10 +139,10 @@ class PublishDataServiceBySensorino(restful.Resource):
 
 
 api.add_resource(RestSensorinoList, '/sensorinos')
-api.add_resource(RestSensorino, '/sensorinos/<int:sid>')
-api.add_resource(ServicesBySensorino, '/sensorinos/<int:sid>/dataServices')
-api.add_resource(ServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>')
-api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<int:sid>/dataServices/<int:serviceId>/data')
+api.add_resource(RestSensorino, '/sensorinos/<string:address>')
+api.add_resource(ServicesBySensorino, '/sensorinos/<string:address>/dataServices')
+api.add_resource(ServiceBySensorino, '/sensorinos/<string:address>/dataServices/<int:serviceId>')
+api.add_resource(PublishDataServiceBySensorino, '/sensorinos/<string:address>/dataServices/<int:serviceId>/data')
 
 
 

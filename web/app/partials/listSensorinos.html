@@ -11,6 +11,7 @@
             <div class="row">
              Search: <input ng-model="query">
             <!--Body content-->
+                list:
                 <ul class="sensorinos">
                 <li ng-repeat="sens in sensorinos | filter:query ">
                     <a href="#/sensorino/{{sens.sid}}">{{sens.name}}</a>
@@ -20,6 +21,10 @@
                 </ul>
             </div>
         </div>
+
+         <div id="debug">
+    </div>
+
 
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             <button type="button" class="btn btn-default btn-lg" ng-click="activateForm()">

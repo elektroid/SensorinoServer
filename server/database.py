@@ -20,19 +20,17 @@ class DbCreator:
 
         c.execute('''DROP TABLE IF EXISTS sensorinos''')
         c.execute('''CREATE TABLE sensorinos
-                     (sid INTEGER PRIMARY KEY, name text, address text UNIQUE, description text, owner text, location text)''')
+                     (address TEXT PRIMARY KEY, name TEXT,  description TEXT, owner TEXT, location TEXT)''')
 
 
         c.execute('''DROP TABLE IF EXISTS services''')
         c.execute('''CREATE TABLE services
-                     (serviceId INTEGER PRIMARY KEY, name text, stype text, dataType text, sid integer, state text)''')
+                     (serviceId INTEGER PRIMARY KEY, name TEXT, stype TEXT, dataType TEXT, saddress TEXT, state TEXT)''')
 
 
         c.execute('''DROP TABLE IF EXISTS dataServicesLog''')
         c.execute('''CREATE TABLE dataServicesLog
-                     (sid integer, serviceId integer, value text, timestamp text)''')
-
-
+                     (saddress TEXT, serviceId INTEGER, value TEXT, timestamp TEXT)''')
 
 
         # Save (commit) the changes

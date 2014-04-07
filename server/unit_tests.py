@@ -39,29 +39,27 @@ class TestX(unittest.TestCase):
     def test_sensorino_creation_deletion(self):
         self.assertTrue(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234")))
         self.assertIsNone(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234")))
-        sens=self.engine.findSensorino(address="1234")
+        sens=self.engine.findSensorino(saddress="1234")
         self.assertIsNotNone(sens)
-        self.assertTrue(self.engine.delSensorino(sens.sid))
+        self.assertTrue(self.engine.delSensorino(sens.address))
 
     def test_findMissingSensorino(self):
         with self.assertRaises(SensorinoNotFoundError) as err:
-            self.engine.findSensorino( address="666")
-        with self.assertRaises(SensorinoNotFoundError) as err:
-            self.engine.findSensorino( sid="666")
+            self.engine.findSensorino( saddress="666")
 
     def test_createService(self):
-        self.assertTrue(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234", sid="5678")))
-        sens=self.engine.findSensorino(address="1234")
-        self.assertTrue(self.engine.createDataService(sens.sid, "testService", "Foo"))
-        services=self.engine.getServicesBySensorino(sens.sid)
+        self.assertTrue(self.engine.addSensorino(sensorino.Sensorino("tokenSensorino", "1234")))
+        sens=self.engine.findSensorino(saddress="1234")
+        self.assertTrue(self.engine.createDataService(sens.address, "testService", "Foo"))
+        services=self.engine.getServicesBySensorino(sens.address)
         for service in services: 
             if "testService" == service.name:
-                self.assertTrue(self.engine.deleteService(sens.sid, service.serviceId))
+                self.assertTrue(self.engine.deleteService(sens.address, service.serviceId))
                 break 
         # now, publish
         with self.assertRaises(ServiceNotFoundError) as err:
-            self.engine.publish(sens.sid, 666, "789")
-        self.assertTrue(self.engine.publish(sens.sid, service.serviceId, "789"))
+            self.engine.publish(sens.address, 666, "789")
+        self.assertTrue(self.engine.publish(sens.address, service.serviceId, "789"))
           
 
 if __name__ == '__main__':

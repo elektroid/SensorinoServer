@@ -80,6 +80,32 @@ sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
             $scope.showForm=false;
 		}
 
+         var m = new Mosquitto();
+    m.onmessage = function(topic, payload, qos){
+                var p = document.createElement("p");
+                p.innerHTML = "topic:"+topic+" pl: "+payload;
+                document.getElementById("debug").appendChild(p);
+
+    //    window.alert("topic:"+topic+" pl: "+payload);
+    };
+    m.onconnect = function(rc){
+                var p = document.createElement("p");
+                p.innerHTML = "CONNACK " + rc;
+                document.getElementById("debug").appendChild(p);
+    };
+
+    m.ondisconnect = function(rc){
+                var p = document.createElement("p");
+                p.innerHTML = "Lost connection";
+                document.getElementById("debug").appendChild(p);
+    };
+    
+
+    m.connect("ws://127.0.0.1/mqtt");
+    m.subscribe("discover", 0);
+
+
+
 });
 
 sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $location, $routeParams, Restangular) {
