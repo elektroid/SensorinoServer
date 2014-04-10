@@ -9,6 +9,7 @@ import threading
 import logging
 import time
 import coreEngine
+import common
 import sensorino
 from errors import *
 
@@ -152,6 +153,7 @@ if __name__ == '__main__':
     print "engine started"
     app.config['PROPAGATE_EXCEPTIONS'] = True
 
+    print("launch app on local loop, you should proxy/forward port on "+common.Config.getRestServer())
     app.run(debug=True)
     print "app running"
 

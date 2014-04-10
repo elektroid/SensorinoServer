@@ -187,6 +187,7 @@ class Core:
 
 
     def start(self):
+        self.loadSensorinos()
         self._createMqttClient().start()
 
 

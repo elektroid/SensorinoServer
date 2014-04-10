@@ -77,7 +77,7 @@ class Sensorino:
         try:
             conn = sqlite3.connect(common.Config.getDbFilename())
             c = conn.cursor()
-            status=c.execute("INSERT OR REPLACE INTO sensorinos SET name=:name, description=:description, owner=:owner, location=:location WHERE adressd=:address", self.toData())
+            status=c.execute("INSERT OR REPLACE INTO sensorinos  (name, description, owner, location, address) VALUES(?,?,?,?,?)", (self.name, self.description, self.owner, self.location, self.address))
             conn.commit()
         except Exception as e:
             print(e)
