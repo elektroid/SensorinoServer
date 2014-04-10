@@ -1,9 +1,7 @@
 
-
-
 # Install mosquitto
 
-nstall a recent version of mosquitto library
+Install a recent version of mosquitto library
 follow instructions at http://mosquitto.org/download/
 
 you can install repository or download directly, under debian:
