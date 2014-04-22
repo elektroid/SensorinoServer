@@ -42,13 +42,17 @@ sensorinoApp.config(['$routeProvider', function($routeProvider) {
 
 
 sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
-		Restangular.setBaseUrl("http://127.0.0.1")
+		Restangular.setBaseUrl("/")
 		var Rsensorinos =  Restangular.all('sensorinos');
 
         $scope.showForm=false;
         $scope.activateForm = function(){
             $scope.showForm=true;
         }
+         $scope.hideForm = function(){
+            $scope.showForm=false;
+        }
+       
 
         $scope.loadSensorinos=function(){
             Rsensorinos.getList().then(function(sensorinos){
@@ -80,31 +84,29 @@ sensorinoApp.controller('MainCtrl', function($scope, Restangular) {
             $scope.showForm=false;
 		}
 
-         var m = new Mosquitto();
-    m.onmessage = function(topic, payload, qos){
-                var p = document.createElement("p");
-                p.innerHTML = "topic:"+topic+" pl: "+payload;
-                document.getElementById("debug").appendChild(p);
+        var m = new Mosquitto();
+        m.onmessage = function(topic, payload, qos){
+            var p = document.createElement("p");
+            p.innerHTML = "topic:"+topic+" pl: "+payload;
+            document.getElementById("debug").appendChild(p);
 
-    //    window.alert("topic:"+topic+" pl: "+payload);
-    };
-    m.onconnect = function(rc){
-                var p = document.createElement("p");
-                p.innerHTML = "CONNACK " + rc;
-                document.getElementById("debug").appendChild(p);
-    };
+            //    window.alert("topic:"+topic+" pl: "+payload);
+        };
+        m.onconnect = function(rc){
+            var p = document.createElement("p");
+            p.innerHTML = "CONNACK " + rc;
+            document.getElementById("debug").appendChild(p);
+        };
 
-    m.ondisconnect = function(rc){
-                var p = document.createElement("p");
-                p.innerHTML = "Lost connection";
-                document.getElementById("debug").appendChild(p);
-    };
-    
-
-    m.connect("ws://127.0.0.1/mqtt");
-    m.subscribe("discover", 0);
+        m.ondisconnect = function(rc){
+            var p = document.createElement("p");
+            p.innerHTML = "Lost connection";
+            document.getElementById("debug").appendChild(p);
+        };
 
 
+//        m.connect("ws://91.121.149.19/mqtt");
+ //       m.subscribe("discover", 0);
 
 });
 
@@ -114,8 +116,12 @@ sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $location, $rou
         $scope.activateForm = function(){
             $scope.showForm=true;
         }
+        $scope.hideForm = function(){
+            $scope.showForm=false;
+        }
 
-        Restangular.setBaseUrl("http://127.0.0.1:5001")
+
+        Restangular.setBaseUrl("/")
         var Rsensorino =   Restangular.all('sensorinos');
         Rsensorino.get($routeParams.sId).then( function(sensorino){
             $scope.sensorino=sensorino;
@@ -131,7 +137,12 @@ sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $location, $rou
         $scope.createService = function(newService){
             console.log("createService:");
             console.log(newService);
-            RServices.post(newService).then($scope.loadServices());
+            RServices.post(newService).then(function(){
+                $scope.loadServices();
+                newService.name="";
+                newService.dataType="";
+                $scope.hideForm();
+            });
         }
 
         $scope.deleteService = function(serviceId){
@@ -153,7 +164,7 @@ sensorinoApp.controller('SensorinoDetailsCtrl', function($scope, $location, $rou
 
 sensorinoApp.controller('ServiceDataLogCtrl',  function($scope, $routeParams, Restangular) {
 
-    Restangular.setBaseUrl("http://127.0.0.1:5001")
+    Restangular.setBaseUrl("/")
     var RServicesData=Restangular.all("sensorinos/"+$routeParams.sId+"/dataServices/"+$routeParams.serviceId+"/data");
     $scope.loadData=function(){
         RServicesData.getList().then(function(logs){

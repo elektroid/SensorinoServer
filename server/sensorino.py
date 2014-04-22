@@ -1,4 +1,3 @@
-#!/usv/bin/python3
 import logging
 import threading
 import sqlite3
@@ -38,7 +37,7 @@ class Sensorino:
         self._alive=None
 
     def loadServices(self):
-        for service in Service.getServicesBySensorino(address=self.address):
+        for service in Service.getServicesBySensorino(self.address):
             self.registerService(service) 
  
 
@@ -50,11 +49,8 @@ class Sensorino:
             return True
         return False
 
-    def removeService(self, serviceId):
-        for service in self.services:
-            if (service.serviceId == serviceId):
-                self.remove(service)
-                break
+    def removeService(self, service):
+        self.services.remove(service)
 
     def getService(self, serviceId):
         for service in self.services:
@@ -83,6 +79,8 @@ class Sensorino:
             print(e)
             # Roll back any change if something goes wrong
             conn.rollback()
+            raise FailToSaveSensorinoError("failed to save sensorino to db")
+            
         return status
 
     def delete(self):
@@ -254,9 +252,9 @@ class Service():
         for srow in rows:
             service=None
             if("DATA" == srow["stype"]):
-                service=DataService(srow['name'], srow['dataType'], sens.sid, srow['serviceId'])
+                service=DataService(srow['name'], srow['dataType'], saddress, srow['serviceId'])
             elif("ACTUATOR" == srow["stype"]):
-                service=ActuatorService(srow['name'], srow['dataType'], sens.sid, srow['serviceId'])
+                service=ActuatorService(srow['name'], srow['dataType'], saddress, srow['serviceId'])
             if(None==service):
                 logger.error("failed to load service for sensorino :"+srow)
             else:

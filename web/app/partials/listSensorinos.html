@@ -14,9 +14,9 @@
                 list:
                 <ul class="sensorinos">
                 <li ng-repeat="sens in sensorinos | filter:query ">
-                    <a href="#/sensorino/{{sens.sid}}">{{sens.name}}</a>
-                        {{sens.description}} with id {{sens.sid}} is at {{sens.location}}
-                    <button ng-click="deleteSensorino(sens.sid)">delete {{sens.sid}}</button>
+                    <a href="#/sensorino/{{sens.address}}">{{sens.name}}</a>
+                        {{sens.description}} with address {{sens.address}} is at {{sens.location}}
+                    <button ng-click="deleteSensorino(sens.address)">delete {{sens.name}}/{{sens.address}}</button>
                 </li>
                 </ul>
             </div>

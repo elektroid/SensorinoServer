@@ -11,17 +11,16 @@
 
     <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
         <h2><small>sensorino:</small> {{sensorino.name}}</h2>
-        Sensorino <b>{{sensorino.name}}</b>
 
         <h2>Services</h2>
         <table class="table">
             <tr><th>Service name</th><th>type</th><th>serviceId</th><th/><th/></tr> <!-- TODO: device -->
             <tr ng-repeat="service in services">
-                <td><a href="#/sensorino/{{sensorino.sid}}/dataServices/{{service.serviceId}}">{{service.name}}</a></td>
+                <td><a href="#/sensorino/{{sensorino.address}}/dataServices/{{service.serviceId}}">{{service.name}}</a></td>
                 <td>{{service.dataType}}</td>
                 <td>{{service.serviceId}}</td>
                 <td>
-                    <button type="button" class="btn btn-default btn-lg" ng-click="move('#/sensorino/'+sensorino.sid+'/dataServices/'+service.serviceId)">
+                    <button type="button" class="btn btn-default btn-lg" ng-click="move('#/sensorino/'+sensorino.address+'/dataServices/'+service.serviceId)">
                          <span class="glyphicon glyphicon-stats"></span>
                     </button>
                 </td>
@@ -33,46 +32,52 @@
             </tr>
         </table>
     </div>
-</div>
 
-<button type="button" class="btn btn-default btn-lg" ng-click="activateForm()">
- <span class="glyphicon glyphicon-plus"></span>
-</button>
-
-
-<div class="row" id="serviceForm" name="serviceForm" ng-show="showForm">
-    <form class="form-horizontal">
-        <fieldset>
-
-        <!-- Form Name -->
-        <legend>Create new Service</legend>
-
-        <!-- Text input-->
-        <div class="control-group">
-          <label class="control-label" for="sname">Name</label>
-          <div class="controls">
-            <input id="sname" name="sname" placeholder="only alphanum"
-                class="input-xlarge" required="" type="text" ng-model="newService.name">
-            <p class="help-block">What service is that ?</p>
-          </div>
-        </div>
-        <!-- Select Basic -->
-        <div class="control-group">
-          <label class="control-label" for="dataType">Choose data type</label>
-          <div class="controls">
-            <select id="dataType" name="dataType" class="input-xlarge" ng-model="newService.dataType">
-              <option value="Temp">Temp</option>
-              <option>Humidity</option>
-              <option>Light</option>
-            </select>
-          </div>
-        </div>
+    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" ng-show="showForm==false">
+        <button type="button" class="btn btn-default btn-lg" ng-click="activateForm()">
+            <span class="glyphicon glyphicon-plus"></span>
+        </button>
+    </div>
 
 
-        </fieldset>
 
-        <button ng-click="createService(newService)">Create Service</button>
-    </form>
+
+    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="serviceForm" name="serviceForm" ng-show="showForm">
+        <form class="form-horizontal">
+            <fieldset>
+
+            <!-- Form Name -->
+            <legend>Create new Service</legend>
+
+            <!-- Text input-->
+            <div class="control-group">
+              <label class="control-label" for="sname">Name</label>
+              <div class="controls">
+                <input id="sname" name="sname" placeholder="only alphanum"
+                    class="input-xlarge" required="" type="text" ng-model="newService.name">
+                <p class="help-block">What service is that ?</p>
+              </div>
+            </div>
+            <!-- Select Basic -->
+            <div class="control-group">
+              <label class="control-label" for="dataType">Choose data type</label>
+              <div class="controls">
+                <select id="dataType" name="dataType" class="input-xlarge" ng-model="newService.dataType">
+                  <option value="Temp">Temp</option>
+                  <option>Humidity</option>
+                  <option>Light</option>
+                </select>
+              </div>
+            </div>
+
+
+            </fieldset>
+
+            <button ng-click="createService(newService)">Create Service</button>
+        </form>
+
+
+    </div>
 
 
 </div>

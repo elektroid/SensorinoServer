@@ -42,6 +42,7 @@ class Core:
     def loadSensorinos(self):
         """load all sensorinos stored in db """
         for senso in sensorino.Sensorino.loadAllSensorinos():
+            senso.loadServices()
             self.addSensorino(senso)
         
 
